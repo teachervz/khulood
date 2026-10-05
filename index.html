@@ -1,0 +1,2119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المخططات البيانية – عرض تفاعلي</title>
+<!-- الخط العربي (إن لم يتوفر الإنترنت سيُستخدم خط النظام تلقائيًا) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   1) الألوان والهوية البصرية — يمكنك تغيير الألوان من هنا
+   ========================================================= */
+:root{
+  --p:#6D4BC3;        /* البنفسجي الأساسي */
+  --p2:#8E6CE0;       /* بنفسجي فاتح */
+  --pd:#3E2A7A;       /* بنفسجي داكن للعناوين */
+  --lav:#F5F1FF;      /* خلفية لافندر */
+  --lav2:#E7DDFF;     /* لافندر أغمق */
+  --mint:#22B8A7;     /* لون مساعد (نعناعي) */
+  --mintl:#DDF7F3;
+  --peach:#FF9F80;    /* لون مساعد (خوخي) */
+  --sun:#FFC857;      /* أصفر */
+  --pink:#F2668F;     /* وردي للأخطاء اللطيفة */
+  --pinkl:#FFE3EC;
+  --ink:#2B2250;      /* لون النص */
+  --muted:#6F6796;
+  --bg:#FBF9FF;
+  --card:#FFFFFF;
+  --shadow:0 18px 40px -18px rgba(62,42,122,.35);
+}
+
+/* =========================================================
+   2) الأساسيات: منع التمرير وتثبيت مقاس 16:9
+   ========================================================= */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#E9E3F8}
+body{font-family:'Tajawal','Cairo','Segoe UI','Geeza Pro',Tahoma,sans-serif;color:var(--ink);
+  user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+
+/* المسرح: 1920×1080 ويتم تكبيره/تصغيره ليناسب أي شاشة دون تغيير التصميم */
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;
+  overflow:hidden;background:var(--bg);box-shadow:0 0 80px rgba(62,42,122,.15)}
+/* زخارف ناعمة في الخلفية */
+#stage::before,#stage::after{content:"";position:absolute;border-radius:50%;filter:blur(10px);pointer-events:none;z-index:0}
+#stage::before{width:620px;height:620px;background:radial-gradient(circle,#EDE4FF 0%,rgba(237,228,255,0) 70%);top:-220px;left:-160px}
+#stage::after{width:720px;height:720px;background:radial-gradient(circle,#DDF7F3 0%,rgba(221,247,243,0) 70%);bottom:-300px;right:-220px}
+.dots{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(#D9CCFF 2px,transparent 2px);background-size:46px 46px;
+  -webkit-mask-image:linear-gradient(135deg,#000 0%,transparent 35%,transparent 70%,#000 100%);mask-image:linear-gradient(135deg,#000 0%,transparent 35%,transparent 70%,#000 100%)}
+#progress{position:absolute;top:0;right:0;height:8px;background:linear-gradient(90deg,var(--mint),var(--p));z-index:50;transition:width .5s ease;border-radius:0 0 0 8px}
+
+/* =========================================================
+   3) الشرائح والانتقالات
+   ========================================================= */
+.slide{position:absolute;inset:0;display:none;flex-direction:column;padding:56px 110px 140px;z-index:1}
+.slide.active{display:flex;z-index:2}
+.slide.leaving{display:flex;z-index:1;pointer-events:none;animation:leave .45s ease forwards}
+.slide.active[data-trans="fade"]{animation:inFade .7s ease both}
+.slide.active[data-trans="zoom"]{animation:inZoom .7s cubic-bezier(.2,.8,.2,1) both}
+.slide.active[data-trans="slide"][data-dir="f"]{animation:inSlideF .7s cubic-bezier(.2,.8,.2,1) both}
+.slide.active[data-trans="slide"][data-dir="b"]{animation:inSlideB .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes leave{to{opacity:0;transform:scale(.98)}}
+@keyframes inFade{from{opacity:0}}
+@keyframes inZoom{from{opacity:0;transform:scale(.94)}}
+@keyframes inSlideF{from{opacity:0;transform:translateX(-90px)}}
+@keyframes inSlideB{from{opacity:0;transform:translateX(90px)}}
+
+/* ظهور العناصر بالتتابع */
+.slide.active .a{animation:rise .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0) * .09s + .2s)}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}}
+.float{animation:floaty 4s ease-in-out infinite}
+@keyframes floaty{50%{transform:translateY(-14px)}}
+.slide.active .a.float{animation:rise .6s both,floaty 4s ease-in-out 1s infinite;animation-delay:calc(var(--d,0) * .09s + .2s),1.2s}
+
+/* رأس الشريحة */
+.sh{display:flex;align-items:center;gap:26px;margin-bottom:30px;flex-wrap:wrap}
+.sh h2{font-size:64px;font-weight:900;color:var(--pd);line-height:1.2}
+.badge{display:inline-flex;align-items:center;gap:10px;background:var(--lav2);color:var(--p);font-size:28px;font-weight:800;
+  padding:10px 26px;border-radius:999px;white-space:nowrap}
+.stage-tag{background:var(--sun);color:#5A3E00}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.center{align-items:center;justify-content:center;text-align:center}
+.row{display:flex;gap:36px}
+.col{display:flex;flex-direction:column}
+.grow{flex:1;min-width:0}
+
+/* عناصر عامة */
+.card{background:var(--card);border-radius:36px;box-shadow:var(--shadow);padding:36px 40px;position:relative}
+.lead{font-size:42px;color:var(--muted);font-weight:500;line-height:1.6}
+.big{font-size:48px;font-weight:800;line-height:1.5}
+.q{font-size:54px;font-weight:800;color:var(--pd);line-height:1.45;text-align:center}
+.muted{color:var(--muted)}
+.code{direction:ltr;unicode-bidi:isolate;display:inline-block;font-family:Consolas,'Courier New',monospace;background:#EFE9FF;color:var(--p);
+  padding:2px 18px;border-radius:14px;font-weight:700}
+.hl{color:var(--p);font-weight:900}
+.chip{display:inline-flex;align-items:center;gap:10px;background:#fff;border:3px solid var(--lav2);border-radius:999px;padding:10px 26px;font-size:30px;font-weight:700;color:var(--pd)}
+
+/* الأزرار */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;background:var(--p);color:#fff;font-size:34px;font-weight:800;
+  padding:18px 42px;border-radius:999px;box-shadow:0 12px 24px -10px rgba(109,75,195,.7);transition:transform .2s,box-shadow .2s,background .2s}
+.btn:hover{transform:translateY(-4px);box-shadow:0 18px 28px -10px rgba(109,75,195,.8)}
+.btn:active{transform:scale(.95)}
+.btn.light{background:#fff;color:var(--p);border:3px solid var(--lav2);box-shadow:none}
+.btn.mint{background:var(--mint);box-shadow:0 12px 24px -10px rgba(34,184,167,.7)}
+.btn.sun{background:var(--sun);color:#5A3E00;box-shadow:0 12px 24px -10px rgba(255,200,87,.8)}
+.btn.sm{font-size:28px;padding:12px 30px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.hide{display:none!important}
+.invis{visibility:hidden}
+
+/* =========================================================
+   4) الأسئلة والخيارات
+   ========================================================= */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:28px;width:100%;max-width:1420px;margin:0 auto}
+.opt{background:#fff;border:4px solid var(--lav2);border-radius:34px;padding:30px 36px;font-size:46px;font-weight:800;display:flex;align-items:center;gap:24px;
+  box-shadow:var(--shadow);transition:transform .2s,border-color .2s,background .2s;text-align:right}
+.opt .ic{font-size:64px;width:92px;height:92px;display:grid;place-items:center;background:var(--lav);border-radius:26px;flex:none}
+.opt:hover{transform:translateY(-5px);border-color:var(--p2)}
+.opt:active{transform:scale(.97)}
+.opt.correct{background:var(--mintl);border-color:var(--mint);animation:pop .5s}
+.opt.correct .ic{background:#fff}
+.opt.wrong{background:var(--pinkl);border-color:var(--pink);animation:shake .5s}
+.opt.dim{opacity:.5}
+@keyframes pop{40%{transform:scale(1.05)}}
+@keyframes shake{20%,60%{transform:translateX(-12px)}40%,80%{transform:translateX(12px)}}
+.fb{min-height:80px;font-size:48px;font-weight:900;text-align:center;margin-top:26px}
+.fb.ok{color:var(--mint);animation:pop .5s}
+.fb.no{color:var(--pink);animation:pop .5s}
+.explain{font-size:36px;color:var(--muted);text-align:center;margin-top:6px}
+
+/* البطاقات القلابة */
+.flips{display:grid;gap:30px;flex:1}
+.flip{perspective:1400px;cursor:pointer;min-height:220px}
+.flip .in{position:relative;width:100%;height:100%;transition:transform .7s cubic-bezier(.3,.8,.3,1);transform-style:preserve-3d}
+.flip.on .in{transform:rotateY(180deg)}
+.flip .fa,.flip .fb2{position:absolute;inset:0;border-radius:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:24px;text-align:center;box-shadow:var(--shadow)}
+.flip .fa{background:#fff;border:4px solid var(--lav2)}
+.flip .fb2{background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;transform:rotateY(180deg)}
+.flip:hover .fa{border-color:var(--p2)}
+.tap{font-size:24px;color:var(--muted);margin-top:14px;font-weight:700}
+.tap::before{content:"👆 "}
+
+/* =========================================================
+   5) عناصر خاصة بالشرائح
+   ========================================================= */
+/* الترحيب والعنوان */
+.hero-emoji{font-size:170px;line-height:1}
+.t-welcome h1,.t-title h1{font-size:110px;font-weight:900;color:var(--pd);line-height:1.2}
+.t-title h1{font-size:150px;background:linear-gradient(90deg,var(--p),var(--mint));-webkit-background-clip:text;background-clip:text;color:transparent;padding:10px 0}
+.teacher{font-size:36px;font-weight:800;color:var(--p);margin-top:18px}
+.chips{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:30px}
+.orbit{position:absolute;font-size:90px;opacity:.9}
+
+/* التحضير */
+.prep{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:34px;flex:1}
+.prep .card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
+.prep h3{font-size:40px;color:var(--p);font-weight:900}
+.date-day{font-size:66px;font-weight:900;color:var(--pd)}
+.date-sub{font-size:34px;color:var(--muted);font-weight:700}
+.counter{display:flex;align-items:center;gap:22px}
+.counter .n{font-size:96px;font-weight:900;color:var(--pd);min-width:150px}
+.rbtn{width:76px;height:76px;border-radius:50%;background:var(--lav);font-size:46px;font-weight:900;color:var(--p);transition:.2s}
+.rbtn:hover{background:var(--lav2)}
+.rbtn:active{transform:scale(.9)}
+.checks{display:flex;flex-direction:column;gap:16px;width:100%}
+.check{display:flex;align-items:center;gap:18px;background:var(--lav);border-radius:24px;padding:14px 22px;font-size:34px;font-weight:800;transition:.25s;text-align:right}
+.check .box{width:50px;height:50px;border-radius:14px;border:4px solid var(--p2);display:grid;place-items:center;font-size:32px;color:#fff;flex:none;transition:.25s}
+.check.on{background:var(--mintl)}
+.check.on .box{background:var(--mint);border-color:var(--mint)}
+
+/* الجسر (الربط) */
+.bridge{display:flex;align-items:center;justify-content:center;gap:40px;flex:1}
+.bridge .card{width:640px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;min-height:430px;justify-content:center}
+.bridge .card h3{font-size:44px;color:var(--pd);font-weight:900}
+.bridge .card p{font-size:34px;color:var(--muted);line-height:1.6}
+.arrow-big{font-size:120px;color:var(--p);animation:nudge 1.4s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateX(-18px)}}
+
+/* جدول البيانات */
+table.data{border-collapse:separate;border-spacing:0;font-size:40px;background:#fff;border-radius:26px;overflow:hidden;box-shadow:var(--shadow)}
+table.data th{background:var(--p);color:#fff;padding:16px 38px;font-weight:800}
+table.data td{padding:14px 38px;text-align:center;border-bottom:2px solid var(--lav);font-weight:700}
+table.data tr:nth-child(even) td{background:var(--lav)}
+
+/* المؤقت */
+.timer{display:flex;align-items:center;gap:16px}
+.timer .ring{position:relative;width:150px;height:150px}
+.timer svg{width:150px;height:150px;transform:rotate(-90deg)}
+.timer .tbg{fill:none;stroke:var(--lav2);stroke-width:12}
+.timer .tfg{fill:none;stroke:var(--p);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .3s}
+.timer .tnum{position:absolute;inset:0;display:grid;place-items:center;font-size:44px;font-weight:900;color:var(--pd);direction:ltr}
+.timer.warn .tfg{stroke:var(--pink)}
+.timer.warn .tnum{color:var(--pink);animation:pop .5s infinite}
+.timer.done .tnum{color:var(--mint)}
+.timer .tb{display:flex;flex-direction:column;gap:10px}
+.timer .tb button{width:64px;height:64px;border-radius:50%;background:var(--lav);font-size:30px;color:var(--p);font-weight:900}
+.timer .tb button:hover{background:var(--lav2)}
+.timer .tlabel{font-size:26px;color:var(--muted);font-weight:800}
+
+/* المخططات */
+.chart-svg{width:100%;height:100%;direction:ltr;overflow:visible}
+.chart-svg text{font-family:'Tajawal',Tahoma,sans-serif}
+.chart-svg .grid{stroke:#E7E2F5;stroke-width:2}
+.chart-svg .ax{font-size:22px;fill:#8A83A8;font-weight:700}
+.chart-svg .lb{font-size:26px;fill:#3E2A7A;font-weight:800}
+.chart-svg .vl{font-size:22px;fill:#3E2A7A;font-weight:900}
+.chart-svg .bar{transform-box:fill-box;transform-origin:50% 100%}
+.anim .bar{animation:grow .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleY(0)}}
+.anim .ln{stroke-dasharray:1;stroke-dashoffset:0;animation:draw 1.4s ease both}
+@keyframes draw{from{stroke-dashoffset:1}}
+.anim .dot,.anim .vl{animation:fadeIn .4s both;animation-delay:1s}
+.anim .pieg{animation:spinIn 1s cubic-bezier(.2,.8,.2,1) both;transform-origin:200px 200px}
+@keyframes spinIn{from{transform:rotate(-120deg) scale(.4);opacity:0}}
+@keyframes fadeIn{from{opacity:0}}
+.legend{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:center;font-size:26px;font-weight:800;color:var(--pd);margin-top:8px}
+.legend i{display:inline-block;width:22px;height:22px;border-radius:6px;margin-left:8px;vertical-align:-3px}
+
+/* أنواع المخططات */
+.types{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;flex:1}
+.tcard{background:#fff;border-radius:36px;box-shadow:var(--shadow);border:4px solid transparent;padding:28px;display:flex;flex-direction:column;align-items:center;gap:12px;transition:.25s}
+.tcard:hover{transform:translateY(-8px);border-color:var(--p2)}
+.tcard.seen{border-color:var(--mint)}
+.tcard .mini{width:100%;height:260px}
+.tcard h3{font-size:40px;font-weight:900;color:var(--pd)}
+.tcard .ico{font-size:60px}
+.detail{position:absolute;inset:-26px 0 0 0;background:rgba(251,249,255,.97);border-radius:36px;display:flex;gap:40px;padding:30px;z-index:5;animation:inZoom .45s both}
+.detail .dchart{flex:1.1;display:flex;flex-direction:column;justify-content:center}
+.detail .dtext{flex:1;display:flex;flex-direction:column;justify-content:center;gap:26px}
+.detail h3{font-size:62px;font-weight:900;color:var(--p)}
+.detail p{font-size:38px;line-height:1.65}
+.use{background:var(--mintl);border-radius:26px;padding:20px 28px;font-size:36px;font-weight:800;color:#0F6E63}
+.xbtn{position:absolute;top:18px;left:22px;width:70px;height:70px;border-radius:50%;background:var(--lav2);font-size:36px;color:var(--p);font-weight:900;z-index:3}
+
+/* المختبر */
+.lab{display:flex;gap:36px;flex:1;min-height:0}
+.lab .chartbox{flex:1.35;display:flex;flex-direction:column;padding:26px 30px}
+.lab .side{flex:1;display:flex;flex-direction:column;gap:22px}
+.seg{display:flex;gap:12px;background:#fff;padding:10px;border-radius:999px;box-shadow:var(--shadow)}
+.seg button{flex:1;font-size:28px;font-weight:800;padding:14px 10px;border-radius:999px;color:var(--muted);transition:.2s}
+.seg button.on{background:var(--p);color:#fff}
+.editor{font-size:30px;font-weight:800;width:100%;border-collapse:separate;border-spacing:0 10px}
+.editor th{color:var(--muted);font-size:24px}
+.editor td{background:#fff;padding:8px 10px;text-align:center}
+.editor td:first-child{border-radius:0 20px 20px 0;color:var(--pd)}
+.editor td:last-child{border-radius:20px 0 0 20px}
+.stp{display:inline-flex;align-items:center;gap:8px}
+.stp button{width:46px;height:46px;border-radius:50%;background:var(--lav);color:var(--p);font-size:30px;font-weight:900}
+.stp span{min-width:62px;display:inline-block}
+.toggle{display:flex;align-items:center;gap:14px;font-size:30px;font-weight:800;background:#fff;border-radius:22px;padding:14px 22px;box-shadow:var(--shadow);width:100%}
+.toggle .sw{width:74px;height:40px;border-radius:999px;background:var(--lav2);position:relative;transition:.25s;flex:none}
+.toggle .sw::after{content:"";position:absolute;top:5px;right:5px;width:30px;height:30px;border-radius:50%;background:#fff;transition:.25s;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.toggle.on .sw{background:var(--mint)}
+.toggle.on .sw::after{right:39px}
+.prompt{background:linear-gradient(135deg,#FFF6DD,#FFF);border:3px dashed var(--sun);border-radius:26px;padding:18px 24px;font-size:30px;font-weight:800;line-height:1.55}
+
+/* فكر – زاوج – شارك */
+.tps{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-top:24px}
+.tps .card{text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;opacity:.45;transition:.35s;border:4px solid transparent}
+.tps .card.on{opacity:1;border-color:var(--p2);transform:translateY(-8px)}
+.tps .card.done{opacity:1;border-color:var(--mint)}
+.tps .emo{font-size:84px}
+.tps h3{font-size:46px;font-weight:900;color:var(--pd)}
+.tps p{font-size:28px;color:var(--muted);font-weight:700}
+
+/* العصف الذهني */
+.storm{position:relative;flex:1}
+.storm .core{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:520px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,var(--p2),var(--p));color:#fff;display:grid;place-items:center;text-align:center;padding:40px;
+  font-size:42px;font-weight:900;line-height:1.4;box-shadow:0 30px 60px -20px rgba(109,75,195,.6);z-index:2}
+.note{position:absolute;background:#FFF6D6;border-radius:22px;padding:18px 26px;font-size:32px;font-weight:800;box-shadow:var(--shadow);
+  animation:noteIn .5s cubic-bezier(.2,1.4,.4,1) both;max-width:430px;text-align:center}
+.note.user{background:var(--mintl)}
+@keyframes noteIn{from{opacity:0;transform:scale(.3) rotate(-8deg)}}
+.addidea{display:flex;gap:14px;justify-content:center;align-items:center;margin-top:10px}
+.addidea input{font-size:30px;padding:14px 26px;border-radius:999px;border:3px solid var(--lav2);width:560px;outline:none;background:#fff;color:var(--ink)}
+.addidea input:focus{border-color:var(--p)}
+
+/* فراغات التعريف */
+.def{font-size:54px;font-weight:700;line-height:2.2;text-align:center;max-width:1500px;margin:0 auto}
+.blank{display:inline-block;min-width:240px;border-bottom:6px dashed var(--p2);color:transparent;cursor:pointer;margin:0 8px;border-radius:12px;
+  background:var(--lav);transition:.3s;padding:0 18px;line-height:1.5}
+.blank::before{content:"؟";color:var(--p2)}
+.blank.on{color:var(--p);background:var(--mintl);border-bottom-color:var(--mint);animation:pop .5s}
+.blank.on::before{content:""}
+
+/* السيناريوهات */
+.scen{display:grid;grid-template-columns:1fr 1fr;gap:26px;flex:1}
+.scen .card{padding:24px 30px;display:flex;flex-direction:column;gap:14px;border:4px solid transparent}
+.scen .card.ok{border-color:var(--mint);background:#F4FFFD}
+.scen .txt{font-size:34px;font-weight:800;line-height:1.5}
+.scen .pick{display:flex;gap:14px}
+.scen .pick button{flex:1;font-size:26px;font-weight:800;background:var(--lav);border-radius:20px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:.2s;border:3px solid transparent}
+.scen .pick button span{font-size:42px}
+.scen .pick button:hover{background:var(--lav2)}
+.scen .pick button.right{background:var(--mintl);border-color:var(--mint)}
+.scen .pick button.bad{background:var(--pinkl);border-color:var(--pink);animation:shake .5s}
+.scen .msg{font-size:26px;font-weight:800;min-height:34px;color:var(--mint)}
+.scen .msg.no{color:var(--pink)}
+
+/* محاكاة إكسل */
+.simwrap{display:flex;gap:30px;flex:1;min-height:0}
+.xl{position:relative;flex:1.65;background:#fff;border-radius:22px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;border:3px solid #D7E6DC}
+.xl-top{background:#1E7145;color:#fff;font-size:24px;font-weight:700;padding:10px 22px;display:flex;justify-content:space-between;direction:rtl}
+.xl-tabs{display:flex;gap:4px;background:#F3F3F3;padding:8px 14px 0;border-bottom:1px solid #ddd}
+.xl-tab{font-size:24px;font-weight:700;padding:10px 20px;border-radius:10px 10px 0 0;color:#444}
+.xl-tab.on{background:#fff;color:#1E7145;box-shadow:inset 0 -4px 0 #1E7145}
+.xl-tab.special{color:#7A3FC2}
+.xl-ribbon{display:flex;gap:10px;padding:12px 16px;background:#fff;border-bottom:1px solid #e3e3e3;min-height:118px;align-items:stretch}
+.xl-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:20px;font-weight:700;color:#333;padding:8px 14px;border-radius:12px;min-width:110px;border:2px solid transparent;line-height:1.25;text-align:center}
+.xl-btn .i{font-size:40px}
+.xl-btn:hover,.xl-tab:hover,.xl-mi:hover{background:#EAF4EE}
+.xl-sheet{flex:1;position:relative;padding:16px;background:#FAFAFA;overflow:hidden}
+.xl-grid{border-collapse:collapse;font-size:21px;background:#fff;cursor:pointer}
+.xl-grid td,.xl-grid th{border:1px solid #D9D9D9;padding:5px 12px;white-space:nowrap;text-align:center}
+.xl-grid th{background:#EFEFEF;color:#666;font-weight:600;font-size:18px}
+.xl-grid .hdr{background:#E2EFDA;font-weight:800}
+.xl-grid .tt{background:#FFF2CC;font-weight:800}
+.xl-grid.sel td:not(.rn){background:#C9E3D2!important;outline:1px solid #1E7145}
+.xl-chart{position:absolute;left:18px;top:16px;width:52%;height:calc(100% - 32px);background:#fff;border:2px solid #9AB;border-radius:10px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);display:flex;flex-direction:column;animation:inZoom .5s both}
+.xl-chart .ct{text-align:center;font-size:22px;font-weight:800;color:#555}
+.xl-menu{position:absolute;z-index:6;background:#fff;border:2px solid #ccc;border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.2);display:flex;gap:0;animation:inFade .25s both}
+.xl-menu .mcol{display:flex;flex-direction:column;padding:8px;min-width:250px;border-left:1px solid #eee}
+.xl-mi{font-size:22px;font-weight:700;padding:10px 14px;border-radius:10px;text-align:right;display:flex;gap:10px;align-items:center;border:2px solid transparent;color:#333}
+.xl-mi .i{font-size:28px}
+.xl-mi.has::after{content:"◂";margin-right:auto;color:#999}
+.xl-mi.act{background:#EAF4EE}
+.pulse{animation:pulse 1s ease-in-out infinite!important;border-color:var(--sun)!important;background:#FFF5D6!important}
+@keyframes pulse{50%{box-shadow:0 0 0 12px rgba(255,200,87,.35)}}
+.xl .shake{animation:shake .45s}
+.steps{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
+.steps ol{list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps li{display:flex;gap:14px;align-items:flex-start;background:#fff;border-radius:20px;padding:9px 16px;font-size:25px;font-weight:700;line-height:1.45;opacity:.5;transition:.3s;border:3px solid transparent}
+.steps li .n{flex:none;width:40px;height:40px;border-radius:50%;background:var(--lav2);color:var(--p);display:grid;place-items:center;font-weight:900}
+.steps li.now{opacity:1;border-color:var(--p2);box-shadow:var(--shadow)}
+.steps li.done{opacity:1;background:var(--mintl)}
+.steps li.done .n{background:var(--mint);color:#fff}
+.simmsg{font-size:30px;font-weight:900;text-align:center;min-height:44px}
+.simmsg.ok{color:var(--mint)} .simmsg.no{color:var(--pink)}
+
+/* الورقة (الاتجاه والهوامش) */
+.paperzone{flex:1;display:flex;align-items:center;justify-content:center}
+.paper{background:#fff;box-shadow:0 26px 50px -18px rgba(0,0,0,.35);border-radius:8px;position:relative;transition:width .7s cubic-bezier(.2,.8,.2,1),height .7s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.paper.portrait{width:420px;height:594px}
+.paper.landscape{width:720px;height:509px}
+.paper .area{position:absolute;inset:34px;border:3px dashed #C9BFEA;transition:inset .4s}
+.ptable{border-collapse:collapse;font-size:15px;position:absolute;top:44px;right:44px;white-space:nowrap}
+.ptable td,.ptable th{border:1px solid #cfe4c4;padding:6px 8px}
+.ptable th{background:#70AD47;color:#fff}
+.cut{position:absolute;top:0;bottom:0;left:0;width:90px;background:repeating-linear-gradient(45deg,rgba(242,102,143,.2) 0 12px,rgba(242,102,143,.05) 12px 24px);border-right:4px dashed var(--pink);transition:.4s}
+.paper.landscape .cut{opacity:0}
+.ptag{font-size:34px;font-weight:900;text-align:center;margin-top:24px;min-height:50px}
+.mpaper{width:470px;height:640px}
+.mpaper .area{background:rgba(109,75,195,.06);border:3px dashed var(--p2)}
+.mpaper .mtable{position:absolute;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:260px;transition:all .4s}
+.mpaper .mtable i{height:26px;background:#E2EFDA;border-radius:3px}
+.mpaper .mtable i:nth-child(-n+4){background:#70AD47}
+.slider{width:100%;accent-color:var(--p);height:40px}
+.mval{font-size:64px;font-weight:900;color:var(--p);direction:ltr;text-align:center}
+
+/* الطباعة */
+.keys{display:flex;gap:18px;align-items:center;justify-content:center;direction:ltr}
+.key{min-width:130px;height:120px;padding:0 26px;border-radius:24px;background:#fff;border:4px solid var(--lav2);border-bottom-width:12px;display:grid;place-items:center;font-size:52px;font-weight:900;color:var(--pd);transition:.2s}
+.key.down{transform:translateY(6px);border-bottom-width:5px;background:var(--mintl);border-color:var(--mint)}
+.pv{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%}
+.hot{background:#fff;border-radius:24px;padding:18px 22px;text-align:right;box-shadow:var(--shadow);border:3px solid var(--lav2);transition:.25s}
+.hot h4{font-size:32px;font-weight:900;color:var(--p)}
+.hot p{font-size:25px;line-height:1.5;color:var(--muted);max-height:0;overflow:hidden;transition:max-height .4s}
+.hot.on{border-color:var(--mint)}
+.hot.on p{max-height:200px;margin-top:6px}
+.eco{background:#E7F7EA;border-radius:24px;padding:16px 24px;font-size:28px;font-weight:800;color:#2E7D32;margin-top:14px}
+
+/* صح أم خطأ */
+.tf{display:flex;flex-direction:column;gap:16px;flex:1}
+.tfrow{display:flex;align-items:center;gap:22px;background:#fff;border-radius:26px;padding:14px 24px;box-shadow:var(--shadow);border:4px solid transparent;transition:.3s}
+.tfrow .s{flex:1;font-size:33px;font-weight:800;line-height:1.4}
+.tfrow .why{display:block;font-size:24px;color:var(--muted);font-weight:700}
+.tfb{width:96px;height:78px;border-radius:22px;font-size:44px;font-weight:900;background:var(--lav);transition:.2s}
+.tfb:hover{transform:scale(1.07)}
+.tfrow.ok{border-color:var(--mint);background:#F4FFFD}
+.tfrow.no{border-color:var(--pink);animation:shake .5s}
+.tfrow .res{width:60px;font-size:44px;text-align:center}
+
+/* تحدي الدقيقة */
+.minute{display:flex;gap:50px;flex:1;align-items:center;justify-content:center}
+.fc{width:900px;height:430px}
+.fc .fa{font-size:84px;font-weight:900;color:var(--pd)}
+.fc .fb2{font-size:90px;font-weight:900;direction:ltr}
+.score{font-size:40px;font-weight:900;color:var(--p);text-align:center}
+.score b{font-size:90px;display:block;color:var(--mint)}
+
+/* المجموعات */
+.groups{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;flex:1}
+.groups .flip{min-height:0}
+.groups .fa h3{font-size:36px;color:var(--p);font-weight:900}
+.groups .fa p{font-size:30px;font-weight:700;line-height:1.5;margin-top:10px}
+.groups .fb2 h3{font-size:64px}
+.groups .fb2 p{font-size:28px;line-height:1.5;margin-top:10px}
+.roles{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.roles .chip{font-size:26px;padding:8px 20px}
+
+/* مهمة التطبيق */
+.task{display:flex;gap:40px;flex:1}
+.task .checks .check{font-size:32px;padding:18px 24px;background:#fff;box-shadow:var(--shadow)}
+
+/* الخريطة الذهنية */
+.mind{position:relative;flex:1}
+.mind svg.lines{position:absolute;inset:0;width:100%;height:100%}
+.mind svg.lines line{stroke:var(--lav2);stroke-width:6;stroke-dasharray:10 10}
+.mind .hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;
+  width:430px;height:190px;border-radius:95px;display:grid;place-items:center;font-size:44px;font-weight:900;box-shadow:0 26px 50px -18px rgba(109,75,195,.7);z-index:2}
+.branch{position:absolute;width:470px;transform:translate(-50%,-50%);background:#fff;border-radius:28px;box-shadow:var(--shadow);padding:16px 22px;text-align:center;border:4px solid var(--lav2);transition:.3s;z-index:2}
+.branch h4{font-size:34px;font-weight:900;color:var(--pd)}
+.branch p{font-size:25px;font-weight:700;color:var(--muted);line-height:1.5;max-height:0;overflow:hidden;transition:max-height .45s,margin .3s}
+.branch.on{border-color:var(--mint)}
+.branch.on p{max-height:200px;margin-top:6px;color:var(--ink)}
+
+/* التقييم الفوري */
+.exit{display:flex;gap:36px;flex:1}
+.lights{display:flex;flex-direction:column;gap:20px}
+.light{display:flex;align-items:center;gap:18px;background:#fff;border-radius:26px;padding:14px 22px;box-shadow:var(--shadow)}
+.light .l{font-size:56px}
+.light .t{flex:1;font-size:30px;font-weight:800}
+.light .c{font-size:52px;font-weight:900;color:var(--pd);min-width:80px;text-align:center}
+.skills .check{font-size:30px;background:#fff;box-shadow:var(--shadow)}
+.skills .check .box{border-color:var(--mint)}
+
+/* الختام */
+.t-closing h1{font-size:96px;font-weight:900;color:var(--pd);line-height:1.3}
+.hw{background:#fff;border-radius:30px;padding:22px 36px;font-size:32px;font-weight:700;box-shadow:var(--shadow);max-width:1300px;line-height:1.6;border-right:10px solid var(--sun)}
+
+/* =========================================================
+   6) شريط التحكم والتأثيرات
+   ========================================================= */
+#bar{position:absolute;bottom:26px;left:50%;transform:translate(-50%,0);display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.92);
+  backdrop-filter:blur(10px);padding:10px 14px;border-radius:999px;box-shadow:0 16px 40px -14px rgba(62,42,122,.45);z-index:60;transition:opacity .4s,transform .4s}
+#bar button{height:66px;min-width:66px;padding:0 24px;border-radius:999px;font-size:26px;font-weight:800;color:var(--p);background:var(--lav);transition:.2s;display:flex;align-items:center;gap:8px}
+#bar button:hover{background:var(--lav2);transform:translateY(-2px)}
+#bar button:active{transform:scale(.93)}
+#bar #clapBtn{font-size:36px;background:#FFF1CC}
+#bar #nextBtn{background:var(--p);color:#fff}
+#counter{font-size:28px;font-weight:900;color:var(--pd);min-width:120px;text-align:center;direction:ltr}
+#hint{position:absolute;bottom:40px;left:30px;font-size:18px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.8);padding:10px 20px;border-radius:999px;z-index:60;transition:opacity .4s}
+#hint b{color:var(--p)}
+body.idle #bar{opacity:0;transform:translate(-50%,30px);pointer-events:none}
+body.idle #hint{opacity:0}
+body.idle #stage{cursor:none}
+
+#fx{position:absolute;inset:0;pointer-events:none;z-index:80;overflow:hidden}
+.clapfx{position:absolute;bottom:90px;font-size:60px;animation:clapUp 2s ease-out forwards}
+@keyframes clapUp{0%{opacity:0;transform:translate(0,0) scale(.5)}15%{opacity:1;transform:translate(0,-60px) scale(1.1)}100%{opacity:0;transform:translate(var(--dx),-720px) scale(.8) rotate(var(--r))}}
+.cf{position:absolute;top:-30px;width:18px;height:28px;border-radius:5px;animation:fall linear forwards}
+@keyframes fall{to{transform:translate(var(--dx),1160px) rotate(var(--r))}}
+.toast{position:absolute;top:60px;left:50%;transform:translateX(-50%);background:#fff;padding:18px 44px;border-radius:999px;font-size:40px;font-weight:900;color:var(--p);box-shadow:var(--shadow);animation:toast 2.2s ease forwards}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,-30px)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+
+/* لوحة نقاط المجموعات */
+#board{position:absolute;inset:0;background:rgba(62,42,122,.5);z-index:70;display:flex;align-items:center;justify-content:center;animation:inFade .3s both}
+#board .panel{background:#fff;border-radius:40px;padding:40px 54px;width:1250px;box-shadow:0 40px 80px rgba(0,0,0,.3);position:relative}
+#board h2{font-size:56px;font-weight:900;color:var(--pd);text-align:center;margin-bottom:26px}
+.gteams{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.gteam{background:var(--lav);border-radius:30px;padding:24px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.gteam .e{font-size:70px}
+.gteam .nm{font-size:32px;font-weight:900;color:var(--pd)}
+.gteam .pt{font-size:80px;font-weight:900;color:var(--p)}
+.gteam .pb{display:flex;gap:12px}
+.gteam.lead{background:#FFF3D1;box-shadow:0 0 0 5px var(--sun)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+
+/* ======== إضافات: العناصر الجديدة ======== */
+.sadu{position:absolute;left:0;right:0;bottom:0;height:18px;z-index:0;opacity:.55;
+  background:linear-gradient(135deg,var(--p) 25%,transparent 25%) -18px 0,linear-gradient(225deg,var(--p) 25%,transparent 25%) -18px 0,
+  linear-gradient(315deg,var(--sun) 25%,transparent 25%),linear-gradient(45deg,var(--sun) 25%,transparent 25%);background-size:36px 36px}
+.basmala{font-family:'Amiri','Traditional Arabic',serif;font-size:64px;color:var(--p);font-weight:700}
+.ayah{font-family:'Amiri','Traditional Arabic',serif;font-size:84px;color:var(--pd);line-height:1.7;font-weight:700}
+.ref{font-size:28px;color:var(--muted);font-weight:700}
+.dua{font-size:46px;font-weight:800;line-height:1.7;color:var(--p);max-width:1500px;text-align:center}
+.drawq{background:#FFF1CC;color:#6B4E00;font-size:28px;font-weight:900;padding:10px 26px;border-radius:999px;transition:.2s}
+.sh .drawq{margin-inline-start:auto}
+.drawq:hover{transform:translateY(-3px);background:#FFE7A3}
+
+/* التحضير */
+.att-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.stat{display:inline-flex;align-items:center;gap:10px;background:#fff;border-radius:999px;padding:8px 22px;font-size:26px;font-weight:800;box-shadow:var(--shadow)}
+.stat b{font-size:34px;color:var(--pd)}
+.att-grid{display:grid;gap:12px;align-content:start}
+.st{position:relative;display:flex;align-items:center;gap:8px;background:#fff;border:3px solid var(--lav2);border-radius:18px;padding:8px 12px;font-weight:800;text-align:right;transition:.2s;min-height:68px;line-height:1.3}
+.st .ic{font-size:26px;flex:none;width:34px;text-align:center}
+.st.present{border-color:var(--mint);background:#F2FBF6}
+.st.absent{border-color:var(--pink);background:var(--pinkl);opacity:.8;text-decoration:line-through}
+.st.late{border-color:var(--sun);background:#FFF8E1}
+.st:hover{transform:translateY(-3px)}
+.st .del{position:absolute;top:-12px;left:-12px;width:38px;height:38px;border-radius:50%;background:var(--pink);color:#fff;font-size:20px;display:none;text-decoration:none}
+.editing .st .del{display:grid;place-items:center}
+.addrow{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.addrow input{font-size:26px;padding:10px 22px;border-radius:999px;border:3px solid var(--lav2);width:420px;outline:none}
+
+/* المجموعات */
+.gcols{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;flex:1;min-height:0}
+.gcol{background:#fff;border-radius:28px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:7px;border-top:12px solid var(--gc);overflow:hidden}
+.gcol h3{font-size:34px;font-weight:900;color:var(--gc);text-align:center}
+.gcol .cnt{text-align:center;font-size:22px;color:var(--muted);font-weight:700}
+.gcol .mem{font-size:23px;font-weight:700;background:var(--lav);border-radius:12px;padding:6px 12px;animation:rise .45s both}
+.gteams{display:grid;grid-template-columns:repeat(5,1fr);gap:18px}
+.gteam .nm{color:var(--gc)!important}
+.gtag{position:absolute;top:-18px;left:50%;transform:translateX(-50%);color:#fff;font-size:20px;font-weight:800;padding:6px 16px;border-radius:999px;white-space:nowrap}
+.tcard{position:relative}
+
+/* النوافذ (قرعة/نقاط) */
+.modal{position:absolute;inset:0;background:rgba(43,34,80,.45);z-index:70;display:flex;align-items:center;justify-content:center;animation:inFade .3s both}
+.modal .panel{background:#fff;border-radius:40px;padding:40px 54px;box-shadow:0 40px 80px rgba(0,0,0,.3);position:relative}
+.modal h2{font-size:56px;font-weight:900;color:var(--pd);text-align:center;margin-bottom:20px}
+.dname{font-size:104px;font-weight:900;color:var(--p);min-height:200px;display:grid;place-items:center;text-align:center;line-height:1.25}
+.dname.spin{color:var(--muted)}
+.dname.win{animation:pop .6s}
+.dfilter{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.dfilter button{padding:8px 20px;border-radius:999px;background:var(--lav);font-size:24px;font-weight:800;color:var(--pd)}
+.dfilter button.on{background:var(--p);color:#fff}
+.drawn{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-height:96px;overflow:hidden;margin-top:12px}
+.drawn span{background:var(--lav);border-radius:999px;padding:4px 14px;font-size:19px;font-weight:700;color:var(--muted)}
+
+/* التصويت */
+.vote{display:flex;flex-direction:column;flex:1;gap:18px;min-height:0}
+.vbars{flex:1;display:flex;align-items:flex-end;justify-content:space-around;gap:30px;padding:0 80px;border-bottom:6px solid var(--pd);min-height:0}
+.vbar{flex:1;max-width:230px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.vbar .b{width:100%;border-radius:18px 18px 0 0;background:var(--c);height:0;transition:height .55s cubic-bezier(.2,1.3,.4,1);min-height:6px}
+.vbar .v{font-size:40px;font-weight:900;color:var(--pd);margin-bottom:6px}
+.vbar.top .v::before{content:"👑 "}
+.vopts{display:flex;justify-content:space-around;gap:30px;padding:0 80px}
+.vopt{flex:1;max-width:230px;display:flex;gap:8px}
+.vadd{flex:1;background:#fff;border:4px solid var(--lav2);border-radius:24px;padding:10px;font-size:30px;font-weight:900;color:var(--pd);display:flex;flex-direction:column;align-items:center;box-shadow:var(--shadow);transition:.2s}
+.vadd .ve{font-size:52px}
+.vadd:hover{border-color:var(--p2);transform:translateY(-4px)}
+.vadd:active{transform:scale(.94)}
+.vminus{width:46px;border-radius:16px;background:var(--lav);font-size:28px;font-weight:900;color:var(--p)}
+.vrev{font-size:64px;font-weight:900;color:var(--p);text-align:center;animation:pop .6s}
+
+/* الفهم القرائي */
+.reading{display:flex;gap:34px;flex:1;min-height:0}
+.passage{flex:1.2;font-size:31px;line-height:2;font-weight:600;text-align:justify}
+.passage h3{font-size:40px;color:var(--p);font-weight:900;margin-bottom:6px}
+.passage .sn{cursor:pointer;border-radius:8px;transition:background .2s}
+.passage .sn:hover{background:var(--lav)}
+.passage .sn.mark{background:#FFE98A;box-shadow:0 0 0 3px #FFE98A}
+.rq{flex:1;display:flex;flex-direction:column;gap:16px}
+.qt{font-size:38px;font-weight:900;color:var(--pd);line-height:1.5}
+.ropts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ropts .opt{font-size:30px;padding:16px 22px;justify-content:center}
+.dotsnav{display:flex;gap:12px;justify-content:center}
+.dotsnav i{width:20px;height:20px;border-radius:50%;background:var(--lav2)}
+.dotsnav i.on{background:var(--p);transform:scale(1.3)}
+.dotsnav i.ok{background:var(--mint)}
+.ansbox{background:var(--mintl);border-radius:26px;padding:20px 30px;font-size:32px;font-weight:800;color:#0B5345;line-height:1.7;animation:pop .5s}
+
+/* ربط بالرياضيات */
+.mlink{display:flex;gap:40px;flex:1;align-items:center}
+.mchart{width:900px;flex:none;background:#fff;border-radius:30px;box-shadow:var(--shadow);padding:18px}
+.mchart .ct{text-align:center;font-size:32px;font-weight:900;color:var(--pd);padding:6px;border-radius:14px;border:4px dashed transparent;transition:.3s}
+.mchart .ct.on{border-color:var(--sun);background:#FFF6D6;animation:pulse 1.2s infinite}
+.mchart .plot{position:relative;width:864px;height:496px}
+.zone{position:absolute;border:5px dashed transparent;border-radius:14px;transition:.3s;pointer-events:none}
+.zone.on{border-color:var(--sun);background:rgba(255,200,87,.2);animation:pulse 1.2s infinite}
+.parts{display:flex;flex-direction:column;gap:14px;flex:1}
+.part{background:#fff;border:4px solid var(--lav2);border-radius:24px;padding:16px 24px;text-align:right;font-size:34px;box-shadow:var(--shadow);transition:.25s;display:flex;flex-direction:column;gap:4px}
+.part .exp{font-size:26px;color:var(--muted);font-weight:700;max-height:0;overflow:hidden;transition:max-height .35s}
+.part.on{border-color:var(--sun);background:#FFFBEA}
+.part.on .exp{max-height:120px}
+
+/* ارسمي بنفسك */
+.builder{display:flex;gap:50px;flex:1;align-items:center}
+.bgrid{display:grid;background:#fff;border-radius:22px;box-shadow:var(--shadow);padding:16px 20px;direction:rtl}
+.bax{font-size:22px;font-weight:800;color:var(--muted);display:flex;align-items:flex-start;justify-content:center;transform:translateY(-14px)}
+.bc{border-top:2px dashed #DCE7E0;margin:0 18px;transition:background .2s}
+.bc:hover{background:rgba(0,0,0,.05)}
+.bc.f{background:var(--c);border-top-color:transparent;box-shadow:inset 0 -1px 0 rgba(255,255,255,.4)}
+.bc.f.bad{outline:4px solid var(--pink);animation:shake .4s}
+.bc.f.good{box-shadow:0 0 0 3px var(--mint)}
+.blab{font-size:24px;font-weight:900;color:var(--pd);text-align:center;border-top:5px solid var(--pd);padding-top:8px}
+
+/* الأسئلة الإبداعية */
+.hq{font-size:52px;font-weight:900;color:var(--pd);line-height:1.6;text-align:center;max-width:1500px}
+.ideas{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;min-height:60px;max-width:1600px}
+.ideas span{background:#FFF6D6;border-radius:18px;padding:10px 20px;font-size:28px;font-weight:800;animation:noteIn .4s both}
+
+/* مشكلات المجموعات */
+.mt{width:100%;border-collapse:collapse;font-size:22px;margin-top:10px;font-weight:700}
+.mt td{border-bottom:2px solid var(--lav);padding:4px 6px;text-align:right}
+.mt td:last-child{text-align:left;font-weight:900;color:var(--p);direction:ltr}
+
+/* ورقة العمل */
+.ws{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;flex:1}
+.wsi{background:#fff;border-radius:28px;box-shadow:var(--shadow);padding:20px;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;text-align:center;border-bottom:8px solid var(--lav2)}
+.wsi .e{font-size:66px}
+.wsi h4{font-size:34px;font-weight:900;color:var(--pd)}
+.wsi p{font-size:26px;color:var(--muted);font-weight:700;line-height:1.5}
+a.btn{text-decoration:none}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="dots"></div>
+  <div id="progress"></div>
+  <div id="deck"></div>
+  <div id="fx"></div>
+
+  <!-- شريط التحكم السفلي -->
+  <div id="bar">
+    <button id="nextBtn" title="التالي (→ أو Space)">→ التالي</button>
+    <span id="counter">1 / 1</span>
+    <button id="prevBtn" title="السابق (←)">السابق ←</button>
+    <button id="clapBtn" title="تصفيق (ت)">👏</button>
+    <button id="drawBtn" title="قرعة الأسماء (ق)">🎲</button>
+    <button id="boardBtn" title="نقاط المجموعات">🏆</button>
+    <button id="fsBtn" title="ملء الشاشة">⛶</button>
+  </div>
+  <div id="hint"><b>Space</b> = التالي &nbsp;|&nbsp; <b>← →</b> للتنقل &nbsp;|&nbsp; <b>ت</b> = تصفيق &nbsp;|&nbsp; <b>ق</b> = قرعة</div>
+</div>
+
+<script>
+/* ==========================================================================
+   ⚙️ الإعدادات والمحتوى — عدّلي من هنا فقط (بدون الحاجة لمعرفة البرمجة)
+   --------------------------------------------------------------------------
+   • كل شريحة عبارة عن { type: 'نوع الشريحة', ... }
+   • لحذف شريحة: احذفي الكتلة { ... } الخاصة بها مع الفاصلة.
+   • لتغيير ترتيب الشرائح: انقلي الكتلة لمكان آخر.
+   • في الأسئلة: ضعي correct: true للخيار الصحيح.
+   • ask: true  ← يُظهر زر «🎲 من تجيب؟» أعلى الشريحة (قرعة الأسماء).
+   • أسماء الطالبات والتحضير والمجموعات والنقاط تُحفَظ تلقائيًا (كوكيز + ذاكرة المتصفح).
+   ========================================================================== */
+const CONFIG = {
+  lesson: {
+    title:   "المخططات البيانية",
+    subject: "المهارات الرقمية",
+    grade:   "الصف السادس الابتدائي",
+    unit:    "الوحدة الثانية – الدرس الثاني",
+    teacher: "معلمتكِ: أ. خلود الحربي",
+    school:  "مدرسة ضيعة العزيين"
+  },
+
+  /* 👩‍🎓 قائمة الطالبات (من كشف الدرجات + تهاني أحمد)
+     ملاحظة: بعد أول تشغيل تُحفَظ القائمة في المتصفح، ويمكن تعديلها من شريحة التحضير ✏️ */
+  students: [
+    "اخلاص ملفي الشيخي", "اسينات طالع الشيخي", "تهاني بنت فهد بن العزي", "تهاني أحمد",
+    "جميلة محمد العزي", "جميله جبار العزي", "جنا الحسن العزي", "جوري الحسن العزي",
+    "جوري يحي نجعي", "حنان احمد العزي", "ريتاج علي العزي", "ساره جبران الريثي",
+    "سعيده جبران الريثي", "سميره احمد الشحني", "شروق رواحي نجعي", "شريفه موسي العزي",
+    "شمعه يحي الريثي", "شموخ محمد العزي", "شهد محمد العزي", "صالحة جابر العزي",
+    "عائشه احمد العزي", "عائشه محمد الريثي", "عبير علي العزي", "عزيزه احمد الشحني",
+    "عسله محمد الريثي", "غلا علي العزي", "فاطمه علي العزي", "نجوى محمد الشحني",
+    "نعمه ابراهيم العزي", "نوره محمد الريثي"
+  ],
+
+  /* 🏆 المجموعات الخمس (تظهر في لوحة النقاط) — غيّري الأسماء كما تحبين */
+  groups: [
+    { name: "المبدعات",   emoji: "🌟", color: "#6D4BC3" },
+    { name: "المتألقات",  emoji: "💎", color: "#22B8A7" },
+    { name: "الطموحات",   emoji: "🚀", color: "#F08A5D" },
+    { name: "المتميزات",  emoji: "🌸", color: "#E0567F" },
+    { name: "المتفوقات",  emoji: "🏅", color: "#3D8BD9" }
+  ],
+
+  /* 📊 البيانات المستخدمة في المخططات (بيانات افتراضية للتدريب) */
+  datasets: {
+    palms:      { title: "الفاكهة المفضّلة لطالبات المدرسة 🍎", labels: ["تفاح", "موز", "عنب", "برتقال"],
+                  series: [{ name: "عدد الطالبات", values: [40, 30, 20, 25] }] },
+    dates:      { title: "مبيعات المقصف المدرسي", labels: ["عصير", "ماء", "سندويتش", "فطائر"],
+                  series: [{ name: "الأسبوع 1", values: [90, 60, 35, 45] }, { name: "الأسبوع 2", values: [100, 55, 40, 50] }] },
+    datesShare: { title: "الرياضة المفضّلة لطالبات الصف", labels: ["المشي", "السباحة", "كرة السلة", "الجري", "التنس"],
+                  series: [{ name: "النسبة", values: [40, 20, 20, 10, 10] }] },
+    temps:      { title: "درجات الحرارة العظمى خلال أسبوع", labels: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"],
+                  series: [{ name: "درجة الحرارة", values: [38, 40, 37, 35, 39] }] },
+    trip:       { title: "ميزانية الرحلة المدرسية", labels: ["النقل", "السكن", "الطعام", "التذاكر", "الهدايا"],
+                  series: [{ name: "النسبة", values: [35, 25, 20, 15, 5] }] },
+    internet:   { title: "ساعات استخدام الإنترنت خلال أيام الأسبوع", labels: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
+                  series: [{ name: "عدد الساعات", values: [2, 1.5, 2, 2.5, 3.5, 5, 4] }] },
+    hobbies:    { title: "الهوايات المفضّلة لطالبات الصف", labels: ["القراءة", "الرسم", "الطبخ", "الفروسية", "السباحة"],
+                  series: [{ name: "عدد الطالبات", values: [7, 5, 4, 3, 6] }] }
+  },
+
+  slides: [
+    /* ───────── 1) الافتتاح بالدعاء ───────── */
+    { type: "opening",
+      basmala: "بسم الله الرحمن الرحيم",
+      ayah: "﴿ وَقُل رَّبِّ زِدْنِي عِلْمًا ﴾", ref: "سورة طه: 114",
+      dua: "اللهم انفعنا بما علّمتنا، وعلّمنا ما ينفعنا، وزدنا علمًا 🤲" },
+
+    /* ───────── 2) الترحيب ───────── */
+    { type: "welcome", emoji: "🌷", heading: "صباح الإبداع يا مبدعات!",
+      sub: "استعدي… اليوم سنحوّل الأرقام إلى صور تحكي قصة 🎨" },
+
+    /* ───────── 3) التحضير ───────── */
+    { type: "attend", stage: "التحضير", title: "تحضير الطالبات" },
+
+    /* ───────── 4) المجموعات بالقرعة ───────── */
+    { type: "teams", stage: "التحضير", strategy: "🏆 التعزيز", title: "لوحة نقاط المجموعات" },
+
+    /* ───────── 5) مراجعة الدرس السابق ───────── */
+    { type: "mcq", stage: "مراجعة الدرس السابق", strategy: "✅ اختاري الإجابة الصحيحة", ask: true,
+      question: "1- في برنامج مايكروسوفت إكسل، رمز عملية الضرب هو:",
+      options: [
+        { icon: "أ", text: "<span style='font-size:72px;font-weight:900;color:var(--p)' dir='ltr'>×</span>" },
+        { icon: "ب", text: "<span style='font-size:72px;font-weight:900;color:var(--p)' dir='ltr'>*</span>", correct: true },
+        { icon: "ج", text: "<span style='font-size:72px;font-weight:900;color:var(--p)' dir='ltr'>#</span>" }
+      ] },
+
+    { type: "mcq", stage: "مراجعة الدرس السابق", strategy: "✅ اختاري الإجابة الصحيحة", ask: true,
+      question: "2- من بين العمليات الحسابية التالية، أيّها له الأولوية؟",
+      options: [
+        { icon: "أ", text: "الأسس", correct: true },
+        { icon: "ب", text: "الضرب" },
+        { icon: "ج", text: "الجمع" }
+      ] },
+
+    { type: "mcq", stage: "مراجعة الدرس السابق", strategy: "✅ اختاري الإجابة الصحيحة", ask: true,
+      question: "3- يمكنكِ تغيير اتجاه الورقة من علامة تبويب:",
+      options: [
+        { icon: "أ", text: "ملف" },
+        { icon: "ب", text: "الشريط الرئيسي" },
+        { icon: "ج", text: "تخطيط الصفحة", correct: true }
+      ] },
+
+    { type: "bridge", stage: "ربط الدرسين", title: "من الأرقام… إلى الصورة!",
+      from: { icon: "🔢", title: "الدرس السابق", text: "أجرينا عمليات حسابية في إكسل<br>(الأقواس، الأسس، النسب المئوية)" },
+      to:   { icon: "📊", title: "درس اليوم", text: "سنعرض الأرقام بصورة<br>يفهمها الجميع بنظرة واحدة!" },
+      question: "هل تفضّلين قراءة جدول مليء بالأرقام… أم صورة توضّح كل شيء بلمحة؟ 🤔" },
+
+    /* ───────── 6) التهيئة: تصويت مباشر ───────── */
+    { type: "vote", stage: "التهيئة", strategy: "🗳️ تصويت مباشر", title: "أيّ مدينة سعودية تحلمين بزيارتها؟",
+      options: [
+        { icon: "🏜️", name: "العُلا" }, { icon: "⛰️", name: "أبها" }, { icon: "🌊", name: "جدة" },
+        { icon: "🏙️", name: "الرياض" }, { icon: "🌴", name: "الأحساء" }
+      ],
+      reveal: "صنعتنّ للتو… مخططًا بيانيًا! 📊" },
+
+    { type: "national", stage: "التهيئة", strategy: "💚 ربط بالوطن", title: "وطني يتخذ قراراته بالبيانات",
+      fact: "تعتمد <b>رؤية المملكة 2030</b> على البيانات في اتخاذ القرارات، وأنشأت المملكة <b>الهيئة السعودية للبيانات والذكاء الاصطناعي «سدايا»</b> لتنظيم البيانات والاستفادة منها.",
+      question: "برأيكِ… أين تحتاج المملكة إلى عرض البيانات بصورة واضحة؟",
+      ideas: ["🌡️ نشرة الطقس", "🕋 أعداد الحجاج والمعتمرين", "🌴 إنتاج التمور في القصيم", "🏜️ زوار العُلا والمواقع السياحية", "🏫 نتائج الاختبارات الوطنية", "🌳 مبادرة السعودية الخضراء"] },
+
+    /* ───────── 7) العنوان ───────── */
+    { type: "title", ayah: "﴿ وَأَحْصَىٰ كُلَّ شَيْءٍ عَدَدًا ﴾", ref: "سورة الجن: 28" },
+
+    /* ───────── 8) الأهداف ───────── */
+    { type: "goals", strategy: "🎯 أهداف الدرس", title: "في نهاية الدرس ستكونين قادرة على:",
+      goals: [
+        "📖 تعريف المخططات البيانية واستخداماتها.",
+        "🔍 التمييز بين: العمودي، الدائري، الخطي، الدائري المجوف.",
+        "🧭 اختيار المخطط المناسب للبيانات.",
+        "📊 إدراج مخطط عمودي ودائري مجوف وإضافة تسميات البيانات.",
+        "📐 ربط المخططات البيانية بالتمثيل بالأعمدة في الرياضيات.",
+        "🌍 ربط المخططات البيانية بالحياة اليومية."
+      ] },
+
+    /* ───────── 9) فهم قرائي ───────── */
+    { type: "reading", strategy: "📖 فهم قرائي: اقرئي – ظلّلي – أجيبي", title: "ريم ومسابقة القراءة", ask: true,
+      passage: [
+        "في الإذاعة المدرسية، عرضت المشرفة لوحة كبيرة عليها أعمدة ملوّنة توضّح عدد الكتب التي قرأتها طالبات كل فصل في مسابقة القراءة.",
+        "سألت «ريم» معلمتها: لماذا لم تكتبوا الأرقام في جدول فقط؟",
+        "فأجابتها المعلمة: لأن المخططات البيانية تمثيلات رسومية للبيانات، تساعد على تحليل المعلومات المعقّدة وتسهيل فهمها، وتساعد في اتخاذ القرار.",
+        "فمن نظرة واحدة عرفت الإدارة أن «الصف السادس» هو الأكثر قراءة، فقررت تكريم طالباته في نهاية الأسبوع.",
+        "عادت ريم إلى البيت، وفتحت برنامج إكسل، وأدخلت البيانات، ثم أنشأت مخططًا عموديًا لتعرضه على زميلاتها."
+      ],
+      questions: [
+        { q: "أين عُرضت لوحة المخطط؟",
+          options: [{ text: "في الإذاعة المدرسية", correct: true }, { text: "في المقصف" }, { text: "في المكتبة العامة" }, { text: "في الملعب" }] },
+        { q: "ظلّلي في النص الجملة التي تعرّف المخططات البيانية ✍️", answer: "«المخططات البيانية تمثيلات رسومية للبيانات، تساعد على تحليل المعلومات المعقّدة وتسهيل فهمها، وتساعد في اتخاذ القرار»" },
+        { q: "ما نوع المخطط الذي أنشأته ريم؟",
+          options: [{ text: "📈 خطي" }, { text: "📊 عمودي", correct: true }, { text: "🥧 دائري" }, { text: "🍩 مجوف" }] },
+        { q: "استنتجي: ما القرار الذي اتخذته الإدارة بفضل المخطط؟", answer: "عرفت الفصل الأكثر قراءة بنظرة واحدة، فقررت تكريم طالبات الصف السادس 💡" }
+      ] },
+
+    /* ───────── 10) التعريف ───────── */
+    { type: "blanks", strategy: "🔍 استخرجي من النص", title: "ما المخططات البيانية؟",
+      text: "هي تمثيلات [رسومية] للبيانات، تساعد على [تحليل] المعلومات المعقّدة و[تسهيل] فهمها، وتساعد في [اتخاذ القرار].",
+      tip: "💡 يعتمد نوع المخطط المراد استخدامه عند إنشاء المخطط البياني على جمهورك، والطريقة التي ترغبين في تقديم البيانات بها." },
+
+    /* ───────── 11) ربط بالحياة الواقعية ───────── */
+    { type: "storm", strategy: "🌍 ربط بالحياة الواقعية — عصف ذهني", title: "أين نرى المخططات في حياتنا؟",
+      core: "أين رأيتِ مخططًا بيانيًا من قبل؟",
+      ideas: ["🌡️ نشرة الطقس", "📱 عدد الخطوات في تطبيقات الصحة", "🏫 نتائج الطالبات", "⚽ إحصائيات المباريات",
+              "🛒 تقارير المبيعات في المتاجر", "📊 نتائج الاستبانات", "⏱️ وقت استخدام الشاشة في الجوال"] },
+
+    /* ───────── 12) ربط بالرياضيات ───────── */
+    { type: "mathlink", strategy: "📐 ربط بالرياضيات", title: "تذكّرين «التمثيل بالأعمدة»؟", data: "palms",
+      parts: [
+        { k: "title", h: "🏷️ العنوان", p: "يوضّح موضوع البيانات." },
+        { k: "x",     h: "↔️ المحور الأفقي", p: "يعرض الفئات (أنواع الفاكهة)." },
+        { k: "y",     h: "↕️ المحور الرأسي والمقياس", p: "يعرض القيم بمسافات متساوية (كل خط = 10)." },
+        { k: "bars",  h: "📊 الأعمدة", p: "متساوية العرض، وارتفاع كل عمود = قيمته." }
+      ],
+      note: "✏️ في الرياضيات نرسمه بالقلم والمسطرة… 🖱️ وفي إكسل يُرسم بضغطة زر!" },
+
+    { type: "builder", strategy: "✏️ ارسمي بنفسك", title: "ارسمي التمثيل بالأعمدة كما في الرياضيات!", data: "hobbies", ask: true },
+
+    /* ───────── 13) أنواع المخططات (جيجسو) ───────── */
+    { type: "types", strategy: "🧩 التعلم التعاوني (جيجسو)", title: "كل مجموعة تشرح مخططًا!",
+      items: [
+        { key: "column",   icon: "📊", name: "العمودي", data: "palms", group: 0,
+          def: "تمثيل تخطيطي للبيانات يستخدم أشرطة عمودية لإظهار المقارنات بين الفئات، ويتوافق ارتفاع كل شريط مع قيمة البيانات التي يمثلها.",
+          use: "🎯 للمقارنة بين الفئات" },
+        { key: "pie",      icon: "🥧", name: "الدائري", data: "datesShare", group: 1,
+          def: "مخطط يمثل البيانات كشرائح من دائرة، حيث تتناسب كل شريحة مع الكمية التي تمثلها، ويُستخدم بشكل شائع لإظهار النسب المئوية للفئات المختلفة.",
+          use: "🎯 لإظهار النسب المئوية والأجزاء من الكل" },
+        { key: "line",     icon: "📈", name: "الخطي", data: "temps", group: 2,
+          def: "تمثيل تخطيطي للبيانات يعرض المعلومات كسلسلة من نقاط البيانات المتصلة بمقاطع خط مستقيم، ويُستخدم بشكل شائع لإظهار الاتجاهات بمرور الوقت.",
+          use: "🎯 لإظهار الاتجاهات والتغيّر بمرور الوقت" },
+        { key: "doughnut", icon: "🍩", name: "الدائري المجوف", data: "trip", group: 3,
+          def: "مخطط دائري به فجوة في الوسط، ويُستخدم لتمثيل البيانات في شكل نسب مئوية، والحلقة الخارجية مقسّمة إلى شرائح تتوافق مع الفئات المختلفة.",
+          use: "🎯 للبيانات المكوّنة من أجزاء متعددة" }
+      ],
+      judge: 4 },
+
+    /* ───────── 14) سؤال مقارنة (بعد شرح العمودي) ───────── */
+    { type: "chartq", strategy: "⚖️ سؤال مقارنة", ask: true, data: "internet",
+      question: "عند مقارنة بيانات هذا المخطط، كيف تحدّدين اليوم الأكثر استخدامًا للإنترنت؟",
+      options: [{ text: "الخميس" }, { text: "الجمعة", correct: true }, { text: "السبت" }, { text: "الأحد" }],
+      answer: "بالنظر إلى العمود الأعلى في المخطط؛ لأنه يمثل أكبر قيمة، وبالتالي يكون ذلك اليوم هو الأكثر استخدامًا للإنترنت." },
+
+    /* ───────── 15) مختبر المخططات ───────── */
+    { type: "lab", strategy: "🧪 تطبيق عملي", title: "مختبر المخططات", data: "dates", ask: true,
+      prompt: "🧩 تحدٍّ: اجعلي «الماء» الأكثر مبيعًا في الأسبوع 2… ثم جرّبي كل نوع. أيّ مخطط أوضح للمقارنة؟" },
+
+    /* ───────── 16) فكري – زاوجي – شاركي ───────── */
+    { type: "tps", strategy: "👭 فكري – زاوجي – شاركي", title: "موقف للنقاش",
+      question: "جمعت صديقتكِ عدد ساعات استخدامها للجوال كل يوم خلال شهر، واختارت <span class='hl'>المخطط الدائري</span> لعرضها.<br>هل اختيارها مناسب؟ ولماذا؟",
+      times: [60, 60, 90],
+      answer: "الأنسب هو <span class='hl'>المخطط الخطي 📈</span> لأنه يُظهر التغيّر والاتجاهات بمرور الوقت." },
+
+    { type: "mcq", strategy: "❓ استراتيجية الأسئلة", ask: true,
+      question: "أيّ مخطط نستخدمه لإظهار تغيّر درجات الحرارة خلال أسبوع؟",
+      options: [
+        { icon: "📊", text: "العمودي" }, { icon: "🥧", text: "الدائري" },
+        { icon: "📈", text: "الخطي", correct: true }, { icon: "🍩", text: "الدائري المجوف" }
+      ],
+      explain: "المخطط الخطي أداة بسيطة وفعّالة لتصوّر البيانات المستمرة بمرور الوقت." },
+
+    /* ───────── 17) اختيار المخطط المناسب ───────── */
+    { type: "scen", strategy: "🧭 اختاري المخطط المناسب", title: "أيّ مخطط يناسب كل موقف؟",
+      items: [
+        { text: "مقارنة درجات 4 طالبات في اختبارين", ok: ["column"] },
+        { text: "تغيّر درجة الحرارة خلال أيام الأسبوع", ok: ["line"] },
+        { text: "نسبة الطالبات حسب رياضتهن المفضّلة", ok: ["pie", "doughnut"] },
+        { text: "نسب بنود ميزانية الرحلة المدرسية لعامين في حلقتين", ok: ["doughnut"] }
+      ] },
+
+    /* ───────── 18) سؤال إبداعي (مهارات تفكير عليا) ───────── */
+    { type: "hots", strategy: "🌟 سؤال إبداعي – مهارات تفكير عليا", ask: true,
+      question: "كيف يمكن استخدام المخططات البيانية لمساعدة إدارة المدرسة في اتخاذ القرارات؟",
+      answer: "يمكن استخدامها لمعرفة احتياجات الطلاب، ومتابعة الحضور، وقياس نتائج الاختبارات، مما يساعد الإدارة على اتخاذ قرارات مبنية على بيانات دقيقة." },
+
+    /* ───────── 19) محاكاة: مخطط عمودي ───────── */
+    { type: "sim", strategy: "🖱️ محاكاة عملية", title: "أدرجي مخططًا عموديًا", ask: true,
+      file: "أسعار المواد الغذائية.xlsx", chart: "column",
+      sheet: {
+        title: "متوسط أسعار المواد الغذائية",
+        head: ["", "يناير 2023", "فبراير 2023", "مارس 2023"],
+        rows: [["خبز", 1.11, 1.11, 1.11], ["شعيرية", 5.18, 5.86, 5.87], ["شوفان", 9.91, 9.56, 9.81],
+               ["دجاج", 15.59, 18.52, 18.53], ["روبيان", 73.92, 75.7, 75.87], ["حليب", 62.57, 80.85, 80.94], ["تمر", 14.08, 12.7, 14.22]]
+      },
+      steps: [
+        { target: "grid",          text: "حدّدي البيانات من الخلية A1 إلى D9" },
+        { target: "tab:insert",    text: "اضغطي على علامة التبويب «إدراج»" },
+        { target: "btn:column",    text: "اضغطي «إدراج مخطط عمودي أو شريطي»" },
+        { target: "opt:clustered", text: "من «عمود ثنائي الأبعاد» اختاري «عمود متفاوت المسافات»", effect: { chart: "column" } }
+      ] },
+
+    /* ───────── 20) محاكاة: دائري مجوف + تسميات البيانات ───────── */
+    { type: "sim", strategy: "🖱️ محاكاة عملية", title: "دائري مجوف + تسميات البيانات", ask: true,
+      file: "قائمة التسوق.xlsx", chart: "doughnut",
+      sheet: {
+        title: "قائمة التسوق",
+        head: ["", "التكلفة الإجمالية"],
+        rows: [["خبز", "1%"], ["شعيرية", "5%"], ["شوفان", "11%"], ["دجاج", "10%"], ["روبيان", "21%"], ["حليب", "44%"], ["تمر", "8%"]]
+      },
+      steps: [
+        { target: "grid",         text: "حدّدي البيانات من A1 إلى B9" },
+        { target: "tab:insert",   text: "اضغطي على علامة التبويب «إدراج»" },
+        { target: "btn:pie",      text: "اضغطي «إدراج مخطط دائري أو دائري مجوف»" },
+        { target: "opt:doughnut", text: "اختاري «دائري مجوف»", effect: { chart: "doughnut" } },
+        { target: "chart",        text: "اضغطي على المخطط لتحديده", effect: { showTab: "design" } },
+        { target: "tab:design",   text: "اضغطي على تبويب «تصميم المخطط»" },
+        { target: "btn:addel",    text: "اضغطي «إضافة عنصر المخطط»" },
+        { target: "opt:labels",   text: "اختاري «تسميات البيانات»" },
+        { target: "opt:show",     text: "اضغطي «إظهار» ✨", effect: { labels: true } }
+      ] },
+
+    { type: "mcq", strategy: "⚡ التقييم الفوري", ask: true,
+      question: "من أيّ علامة تبويب نضيف «تسميات البيانات» للمخطط؟",
+      options: [
+        { icon: "🏠", text: "الشريط الرئيسي" }, { icon: "➕", text: "إدراج" },
+        { icon: "🎨", text: "تصميم المخطط", correct: true }, { icon: "🧮", text: "الصيغ" }
+      ] },
+
+    /* ───────── 21) حل المشكلات (5 مجموعات) ───────── */
+    { type: "problems", strategy: "🧠 حل المشكلات – تعلم تعاوني", title: "مشكلات من مدرستنا وحياتنا!", seconds: 240,
+      roles: ["👑 القائدة", "🔎 قارئة البيانات", "✏️ الرسّامة", "⏱️ مراقبة الوقت", "🎤 المتحدثة"],
+      items: [
+        { title: "🥤 مقصف المدرسة", q: "أي عصير نطلب أكثر؟", rows: [["برتقال", 12], ["مانجو", 8], ["تفاح", 5], ["فراولة", 7]],
+          icon: "📊", ans: "مخطط عمودي", why: "القرار: زيادة طلب البرتقال 🍊" },
+        { title: "💡 حملة ترشيد الكهرباء", q: "هل نجحت الحملة؟ (الاستهلاك بالكيلوواط)", rows: [["محرم", 900], ["صفر", 820], ["ربيع1", 760], ["ربيع2", 700]],
+          icon: "📈", ans: "مخطط خطي", why: "القرار: نعم نجحت؛ الاستهلاك يتناقص 👏" },
+        { title: "🚌 الرحلة المدرسية", q: "أين نوفّر من الميزانية؟", rows: [["النقل", "35%"], ["السكن", "25%"], ["الطعام", "20%"], ["التذاكر", "15%"], ["الهدايا", "5%"]],
+          icon: "🥧", ans: "مخطط دائري", why: "القرار: نبدأ بأكبر بند (النقل)" },
+        { title: "🏫 حضور الطالبات", q: "أي يوم يحتاج تحفيزًا؟", rows: [["الأحد", 29], ["الاثنين", 28], ["الثلاثاء", 27], ["الأربعاء", 26], ["الخميس", 22]],
+          icon: "📊", ans: "مخطط عمودي", why: "القرار: تحفيز خاص ليوم الخميس 🎁" },
+        { title: "🌳 حديقة المدرسة", q: "قارني أنواع الأشجار المزروعة لعامين", rows: [["ليمون", "40% | 35%"], ["زيتون", "30% | 25%"], ["رمان", "30% | 40%"]],
+          icon: "🍩", ans: "دائري مجوف", why: "حلقتان: حلقة لكل عام 💚" }
+      ] },
+
+    /* ───────── 22) ورقة العمل ───────── */
+    { type: "worksheet", strategy: "📝 ورقة العمل", title: "ورقة العمل: ارسمي… واتخذي القرار!",
+      file: "3- ورقة العمل.docx", seconds: 480,
+      items: [
+        { e: "🥤", h: "حلّ مشكلة المقصف", p: "ارسمي مخططًا عموديًا واقترحي قرارًا" },
+        { e: "⚽", h: "الرياضة المفضّلة", p: "لوّني المخطط الدائري حسب النسب" },
+        { e: "👟", h: "خطوات ريم", p: "ارسمي مخططًا خطيًا واستنتجي" },
+        { e: "🧭", h: "اختاري المخطط", p: "صِلي كل موقف بالمخطط المناسب" },
+        { e: "📚", h: "اقرئي المخطط", p: "مكتبة المدرسة + ربط بالرياضيات" },
+        { e: "🌟", h: "سؤال إبداعي", p: "نادي البرمجة: كيف تقنعين الإدارة؟" }
+      ] },
+
+    /* ───────── 23) صح أم خطأ ───────── */
+    { type: "tf", strategy: "✔️ صح أم خطأ", title: "احكمي على العبارات", ask: true,
+      items: [
+        { s: "المخطط الخطي يُستخدم لإظهار الاتجاهات بمرور الوقت.", a: true },
+        { s: "المخطط العمودي يمثّل البيانات كشرائح من دائرة.", a: false, why: "الصحيح: يستخدم أشرطة عمودية." },
+        { s: "التمثيل بالأعمدة في الرياضيات يشبه المخطط العمودي في إكسل.", a: true },
+        { s: "نضيف تسميات البيانات من علامة التبويب «إدراج».", a: false, why: "الصحيح: من «تصميم المخطط»." },
+        { s: "العمود الأعلى في المخطط العمودي يمثل أصغر قيمة.", a: false, why: "الصحيح: يمثل أكبر قيمة." }
+      ] },
+
+    /* ───────── 24) تحدي الدقيقة ───────── */
+    { type: "minute", strategy: "⏱️ تحدي الدقيقة", title: "قولي المصطلح بالإنجليزية!", seconds: 60,
+      cards: [
+        { ar: "مخطط", en: "Chart" }, { ar: "مخطط دائري", en: "Pie Chart" }, { ar: "مخطط خطي", en: "Line Chart" },
+        { ar: "دائري مجوف", en: "Doughnut" }, { ar: "مخطط عمودي", en: "Column Chart" }, { ar: "نسبة مئوية", en: "Percentage" },
+        { ar: "جدول بيانات", en: "Spreadsheet" }, { ar: "تسميات البيانات", en: "Data Labels" }, { ar: "إدراج", en: "Insert" }
+      ] },
+
+    /* ───────── 25) المراجعة ───────── */
+    { type: "mind", strategy: "🧠 مراجعة", title: "خريطة الدرس", hub: "المخططات البيانية",
+      branches: [
+        { h: "📊 الأنواع", p: "عمودي • دائري • خطي • دائري مجوف" },
+        { h: "➕ الإدراج", p: "تحديد البيانات ← إدراج ← المخططات" },
+        { h: "🏷️ تسميات البيانات", p: "تحديد المخطط ← تصميم المخطط ← إضافة عنصر المخطط ← تسميات البيانات ← إظهار" },
+        { h: "🧭 الاختيار", p: "مقارنة ← عمودي • نسب ← دائري • تغيّر بالوقت ← خطي" },
+        { h: "📐 الرياضيات", p: "التمثيل بالأعمدة: عنوان • محوران • مقياس • أعمدة متساوية" },
+        { h: "🌍 حياتي", p: "الطقس • نتائج الاختبارات • المبيعات • قرارات الإدارة" }
+      ] },
+
+    /* ───────── 26) التقييم الفوري ───────── */
+    { type: "exit", strategy: "🚦 التقييم الفوري", title: "كيف أشعر الآن؟",
+      skills: ["أميّز أنواع المخططات البيانية", "أختار المخطط المناسب للبيانات", "أدرج مخططًا وأضيف تسميات البيانات",
+               "أقرأ المخطط وأستنتج منه وأتخذ القرار", "أربط المخططات بالرياضيات وحياتي"] },
+
+    /* ───────── 27) الختام ───────── */
+    { type: "closing", emoji: "🏆", heading: "البيانات تحكي قصة…<br>وأنتِ من ترويها! 📊💜",
+      sub: "مبدعات بالأرقام والمخططات… فخورة بكنّ!",
+      dua: "سبحانك اللهم وبحمدك، أشهد أن لا إله إلا أنت، أستغفرك وأتوب إليك",
+      homework: "📝 <b>مشروع الوحدة:</b> اختاري مع مجموعتك موضوعًا (الأطعمة الصحية وغير الصحية / أنواع التلوث / الأجهزة الرقمية)، واجمعي بياناته في إكسل، ثم مثّليها بأنواع مختلفة من المخططات." }
+  ]
+};
+
+/* ==========================================================================
+   🧩 المحرك — لا تحتاجين لتعديل ما بعد هذا السطر
+   ========================================================================== */
+const L = CONFIG.lesson;
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const COLORS = ["#6D4BC3", "#FF9F80", "#22B8A7", "#FFC857", "#F2668F", "#5AA9E6", "#9B8BD1"];
+const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
+
+/* ---------------- 🔊 الأصوات (Web Audio API — بدون ملفات خارجية) ---------------- */
+let AC = null;
+function ac() {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === "suspended") AC.resume();
+  return AC;
+}
+function tone(freq, start, dur, type = "sine", vol = .22) {
+  const c = ac(), o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, c.currentTime + start);
+  g.gain.linearRampToValueAtTime(vol, c.currentTime + start + .015);
+  g.gain.exponentialRampToValueAtTime(.001, c.currentTime + start + dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(c.currentTime + start); o.stop(c.currentTime + start + dur + .05);
+}
+const Sound = {
+  /* صوت تصفيق: نبضات ضوضاء مفلترة بتوقيتات عشوائية تحاكي تصفيق مجموعة */
+  clap() {
+    const c = ac(), len = c.sampleRate * .12, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const total = 1.8;
+    for (let p = 0; p < 5; p++) {                       // 5 "أشخاص" يصفقون
+      let t = Math.random() * .08;
+      const rate = .16 + Math.random() * .08;
+      while (t < total) {
+        const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+        s.buffer = buf; f.type = "bandpass"; f.frequency.value = 900 + Math.random() * 1400; f.Q.value = .9;
+        const fade = 1 - t / total;
+        g.gain.value = (.35 + Math.random() * .35) * fade;
+        s.connect(f); f.connect(g); g.connect(c.destination);
+        s.start(c.currentTime + t);
+        t += rate + (Math.random() - .5) * .05;
+      }
+    }
+  },
+  success() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * .09, .35, "triangle", .2)); },
+  wrong()   { tone(330, 0, .22, "sine", .18); tone(262, .16, .35, "sine", .18); },
+  click()   { tone(880, 0, .06, "square", .05); },
+  tick()    { tone(1200, 0, .05, "square", .06); },
+  done()    { [784, 988, 1175].forEach((f, i) => tone(f, i * .15, .6, "sine", .22)); },
+  pop()     { tone(600, 0, .08, "triangle", .12); tone(900, .05, .1, "triangle", .1); }
+};
+
+/* ---------------- ✨ التأثيرات البصرية ---------------- */
+const fx = () => $("#fx");
+function clap() {
+  Sound.clap();
+  for (let i = 0; i < 16; i++) {
+    const e = document.createElement("div");
+    e.className = "clapfx"; e.textContent = "👏";
+    e.style.left = (760 + Math.random() * 400) + "px";
+    e.style.fontSize = (44 + Math.random() * 40) + "px";
+    e.style.setProperty("--dx", (Math.random() * 700 - 350) + "px");
+    e.style.setProperty("--r", (Math.random() * 60 - 30) + "deg");
+    e.style.animationDelay = (Math.random() * .6) + "s";
+    fx().appendChild(e); setTimeout(() => e.remove(), 2800);
+  }
+}
+function confetti(n = 70) {
+  for (let i = 0; i < n; i++) {
+    const e = document.createElement("div");
+    e.className = "cf";
+    e.style.left = Math.random() * 1920 + "px";
+    e.style.background = COLORS[i % COLORS.length];
+    e.style.setProperty("--dx", (Math.random() * 300 - 150) + "px");
+    e.style.setProperty("--r", (Math.random() * 900) + "deg");
+    e.style.animationDuration = (1.6 + Math.random() * 1.4) + "s";
+    e.style.animationDelay = Math.random() * .4 + "s";
+    fx().appendChild(e); setTimeout(() => e.remove(), 3500);
+  }
+}
+function toast(msg) {
+  const e = document.createElement("div"); e.className = "toast"; e.innerHTML = msg;
+  fx().appendChild(e); setTimeout(() => e.remove(), 2300);
+}
+function celebrate(msg) { Sound.success(); confetti(); if (msg) toast(msg); }
+
+/* ---------------- 📊 رسم المخططات (SVG) ---------------- */
+/* اختيار مقياس مناسب للمحور (خطوط شبكة متساوية) */
+function scale(vals) {
+  const m = Math.max(...vals, 1);
+  for (const st of [1, 2, 5, 10, 20, 25, 50, 100]) { const n = Math.ceil(m * 1.1 / st); if (n <= 6) return { max: n * st, tn: n }; }
+  return { max: Math.ceil(m / 100) * 100, tn: 5 };
+}
+
+function colChart(d, o = {}) {
+  const W = 820, H = 470, top = 24, bot = 56, left = 20, right = 64, pw = W - left - right, ph = H - top - bot;
+  const { max, tn } = scale(d.series.flatMap(s => s.values));
+  let g = "";
+  for (let k = 0; k <= tn; k++) {
+    const y = top + ph - ph * k / tn;
+    g += `<line class="grid" x1="${left}" x2="${W - right}" y1="${y}" y2="${y}"/>
+          <text class="ax" x="${W - right + 12}" y="${y + 8}">${+(max * k / tn).toFixed(1)}</text>`;
+  }
+  const n = d.labels.length, cw = pw / n, ns = d.series.length, bw = Math.min(56, cw * .72 / ns);
+  d.labels.forEach((lb, i) => {
+    const cx = W - right - (i + .5) * cw;
+    g += `<text class="lb" x="${cx}" y="${H - bot + 36}" text-anchor="middle" style="font-size:${n > 5 ? 20 : 26}px">${lb}</text>`;
+    d.series.forEach((s, j) => {
+      const v = s.values[i], h = ph * v / max, x = cx - ns * bw / 2 + (ns - 1 - j) * bw, y = top + ph - h;
+      g += `<rect class="bar" x="${x + 2}" y="${y}" width="${bw - 4}" height="${h}" rx="6" fill="${s.color || COLORS[j]}" style="animation-delay:${(i * ns + j) * .07}s"/>`;
+      if (o.labels) g += `<text class="vl" x="${x + bw / 2}" y="${y - 8}" text-anchor="middle">${v}</text>`;
+    });
+  });
+  return `<svg class="chart-svg ${o.anim === false ? "" : "anim"}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
+}
+
+function lineChart(d, o = {}) {
+  const W = 820, H = 470, top = 24, bot = 56, left = 40, right = 70, pw = W - left - right, ph = H - top - bot;
+  const { max, tn } = scale(d.series.flatMap(s => s.values));
+  let g = "";
+  for (let k = 0; k <= tn; k++) {
+    const y = top + ph - ph * k / tn;
+    g += `<line class="grid" x1="${left}" x2="${W - right}" y1="${y}" y2="${y}"/>
+          <text class="ax" x="${W - right + 12}" y="${y + 8}">${+(max * k / tn).toFixed(1)}</text>`;
+  }
+  const n = d.labels.length, cw = pw / n;
+  const px = i => W - right - (i + .5) * cw;
+  d.labels.forEach((lb, i) => g += `<text class="lb" x="${px(i)}" y="${H - bot + 36}" text-anchor="middle">${lb}</text>`);
+  d.series.forEach((s, j) => {
+    const c = s.color || COLORS[j];
+    const pts = s.values.map((v, i) => [px(i), top + ph - ph * v / max]);
+    g += `<path class="ln" pathLength="1" d="M${pts.map(p => p.join(",")).join(" L")}" fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" style="animation-delay:${j * .3}s"/>`;
+    pts.forEach((p, i) => {
+      g += `<circle class="dot" cx="${p[0]}" cy="${p[1]}" r="10" fill="#fff" stroke="${c}" stroke-width="5"/>`;
+      if (o.labels) g += `<text class="vl" x="${p[0]}" y="${p[1] - 20}" text-anchor="middle">${s.values[i]}</text>`;
+    });
+  });
+  return `<svg class="chart-svg ${o.anim === false ? "" : "anim"}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
+}
+
+/* مخطط دائري / دائري مجوف — rings: مصفوفة من مصفوفات القيم (حلقة لكل سلسلة) */
+function pieChart(rings, o = {}) {
+  const donut = !!o.donut;
+  let g = "";
+  const cfg = donut
+    ? rings.map((_, k) => ({ r: 150 - k * 52, w: rings.length > 1 ? 40 : 56 }))
+    : [{ r: 85, w: 170 }];
+  rings.slice(0, cfg.length).forEach((vals, k) => {
+    const { r, w } = cfg[k], C = 2 * Math.PI * r, sum = vals.reduce((a, b) => a + b, 0);
+    let acc = 0;
+    vals.forEach((v, i) => {
+      const len = C * v / sum;
+      g += `<circle cx="200" cy="200" r="${r}" fill="none" stroke="${COLORS[i % COLORS.length]}" stroke-width="${w}"
+              stroke-dasharray="${len} ${C}" stroke-dashoffset="${-acc}" transform="rotate(-90 200 200)"/>`;
+      if (o.labels) {
+        const ang = (acc + len / 2) / C * 2 * Math.PI - Math.PI / 2, lr = donut ? r : r * 1.15;
+        const txt = o.pct ? Math.round(v / sum * 100) + "%" : (+v.toFixed(1));
+        g += `<text class="vl" x="${200 + lr * Math.cos(ang)}" y="${200 + lr * Math.sin(ang) + 8}" text-anchor="middle"
+                style="font-size:${donut ? 20 : 24}px;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.35);stroke-width:3px">${txt}</text>`;
+      }
+      acc += len;
+    });
+    // فواصل بيضاء بين الشرائح
+  });
+  return `<svg class="chart-svg ${o.anim === false ? "" : "anim"}" viewBox="-10 -10 420 420" preserveAspectRatio="xMidYMid meet"><g class="pieg">${g}</g></svg>`;
+}
+function legend(items) {
+  return `<div class="legend">${items.map((t, i) => `<span><i style="background:${COLORS[i % COLORS.length]}"></i>${t}</span>`).join("")}</div>`;
+}
+/* رسم أي نوع من بيانات بصيغة gradesData */
+function drawChart(type, d, o = {}) {
+  const lg = items => o.noLegend ? "" : legend(items);
+  if (type === "column") return colChart(d, o) + lg(d.series.map(s => s.name));
+  if (type === "line")   return lineChart(d, o) + lg(d.series.map(s => s.name));
+  if (type === "pie") {
+    const avg = d.labels.map((_, i) => d.series.reduce((a, s) => a + s.values[i], 0) / d.series.length);
+    return pieChart([avg], { labels: o.labels, anim: o.anim, pct: o.pct }) + lg(d.labels);
+  }
+  if (type === "doughnut") return pieChart(d.series.map(s => s.values), { donut: true, labels: o.labels, anim: o.anim, pct: o.pct }) + lg(d.labels);
+}
+
+/* ---------------- ⏱️ المؤقت ---------------- */
+function timerHTML(sec, label = "") {
+  return `<div class="timer" data-sec="${sec}">
+    <div class="ring"><svg viewBox="0 0 150 150"><circle class="tbg" cx="75" cy="75" r="62"/><circle class="tfg" cx="75" cy="75" r="62"/></svg><div class="tnum"></div></div>
+    <div class="tb"><button data-t="go" title="تشغيل/إيقاف">▶</button><button data-t="reset" title="إعادة">↺</button></div>
+    ${label ? `<div class="tlabel">${label}</div>` : ""}</div>`;
+}
+const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+function initTimer(t, api) {
+  const C = 2 * Math.PI * 62, fg = $(".tfg", t), num = $(".tnum", t), go = $('[data-t="go"]', t);
+  fg.style.strokeDasharray = C;
+  let total = +t.dataset.sec, left = total, iv = null;
+  const draw = () => { num.textContent = fmt(left); fg.style.strokeDashoffset = C * (1 - left / total); };
+  const stop = () => { clearInterval(iv); iv = null; go.textContent = "▶"; };
+  const start = () => {
+    if (left <= 0) reset();
+    go.textContent = "⏸";
+    iv = setInterval(() => {
+      left--; draw();
+      t.classList.toggle("warn", left <= 5 && left > 0);
+      if (left <= 5 && left > 0) Sound.tick();
+      if (left <= 0) { stop(); t.classList.remove("warn"); t.classList.add("done"); Sound.done(); t.dispatchEvent(new CustomEvent("timerend")); }
+    }, 1000);
+  };
+  const reset = () => { stop(); left = total; t.classList.remove("warn", "done"); draw(); };
+  go.onclick = () => iv ? stop() : start();
+  $('[data-t="reset"]', t).onclick = reset;
+  t.api = { start, stop, reset, set(s) { total = s; reset(); } };
+  api.leave.push(stop);
+  draw();
+}
+
+/* ---------------- 🧱 قوالب الشرائح ---------------- */
+function head(s) {
+  if (!s.stage && !s.strategy && !s.title && !s.ask) return "";
+  return `<header class="sh a">${s.stage ? `<span class="badge stage-tag">📍 ${s.stage}</span>` : ""}${s.strategy ? `<span class="badge">${s.strategy}</span>` : ""}${s.title ? `<h2>${s.title}</h2>` : ""}${s.ask ? `<button class="drawq">🎲 من تجيب؟</button>` : ""}</header>`;
+}
+const T = {};
+
+/* ---------------- 💾 الحفظ (كوكيز + ذاكرة المتصفح كنسخة احتياطية) ----------------
+   ملاحظة: بعض المتصفحات (مثل Chrome) لا تحفظ الكوكيز عند فتح الملف مباشرة من الجهاز (file://)،
+   لذلك تُحفَظ نسخة في ذاكرة المتصفح (localStorage) أيضًا لضمان عدم ضياع البيانات. */
+const Cookie = {
+  w(name, v, age = 31536000) { document.cookie = `cs_${name}=${v}; max-age=${age}; path=/; SameSite=Lax`; },
+  raw(name) { const m = document.cookie.match(new RegExp("(?:^|; )cs_" + name + "=([^;]*)")); return m ? m[1] : null; },
+  set(k, val) {                                   // تقسيم القيمة الطويلة على عدة كوكيز
+    const enc = encodeURIComponent(val), size = 3000, n = Math.max(1, Math.ceil(enc.length / size)), old = +this.raw(k + "_n") || 0;
+    for (let i = 0; i < n; i++) this.w(`${k}_${i}`, enc.slice(i * size, (i + 1) * size));
+    this.w(k + "_n", n);
+    for (let i = n; i < old; i++) this.w(`${k}_${i}`, "", -1);
+  },
+  get(k) {
+    const n = +this.raw(k + "_n"); if (!n) return null;
+    let s = ""; for (let i = 0; i < n; i++) s += this.raw(`${k}_${i}`) || "";
+    try { return decodeURIComponent(s); } catch (e) { return null; }
+  }
+};
+const Store = {
+  get(k, def) {
+    const c = Cookie.get(k);
+    if (c != null) try { return JSON.parse(c); } catch (e) {}
+    try { const v = localStorage.getItem("cs_" + k); if (v != null) return JSON.parse(v); } catch (e) {}
+    return def;
+  },
+  set(k, v) {
+    const s = JSON.stringify(v);
+    try { Cookie.set(k, s); } catch (e) {}
+    try { localStorage.setItem("cs_" + k, s); } catch (e) {}
+  }
+};
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+
+/* حالة الصف: الطالبات، الحضور، المجموعات، النقاط */
+const Class = {
+  students: Store.get("students", CONFIG.students.slice()),
+  att: (() => { const a = Store.get("att", null); return a && a.date === today() ? a.map : {}; })(),
+  groups: Store.get("groups", null),
+  points: Store.get("points", CONFIG.groups.map(() => 0)),
+  status(n) { return this.att[n] || "present"; },
+  present() { return this.students.filter(n => this.status(n) !== "absent"); },
+  saveStudents() { Store.set("students", this.students); },
+  saveAtt() { Store.set("att", { date: today(), map: this.att }); },
+  saveGroups() { Store.set("groups", this.groups); },
+  savePoints() { Store.set("points", this.points); },
+  groupOf(n) { return this.groups ? this.groups.findIndex(g => g.includes(n)) : -1; }
+};
+if (Class.points.length !== CONFIG.groups.length) Class.points = CONFIG.groups.map(() => 0);
+const onClassChange = [];                       // دوال تُستدعى عند تغيّر بيانات الصف
+const classChanged = () => onClassChange.forEach(f => f());
+
+/* ---------------- 🎲 قرعة الأسماء ---------------- */
+let drawn = (() => { const d = Store.get("drawn", null); return d && d.date === today() ? d.names : []; })();
+let drawFilter = -1, noRepeat = true, spinning = false;
+function openDraw() {
+  if ($("#drawM")) return closeModal("drawM");
+  const m = document.createElement("div"); m.id = "drawM"; m.className = "modal";
+  m.innerHTML = `<div class="panel" style="width:1250px;text-align:center"><button class="xbtn">✕</button>
+    <h2>🎲 قرعة الأسماء</h2>
+    <div class="muted" style="font-size:26px;font-weight:700">👭 القرعة من الطالبات الحاضرات فقط</div>
+    <div class="dname">من ستكون المحظوظة؟ ✨</div>
+    <div class="row" style="justify-content:center;gap:18px;margin:6px 0 18px">
+      <button class="btn sun" data-a="go" style="font-size:40px">🎲 اسحبي اسمًا</button>
+      <button class="toggle ${noRepeat ? "on" : ""}" data-a="rep" style="width:auto"><span class="sw"></span>بدون تكرار</button>
+      <button class="btn light sm" data-a="reset">↺ تصفير</button></div>
+    <div class="dinfo muted" style="font-size:24px;font-weight:700"></div>
+    <div class="drawn"></div></div>`;
+  $("#stage").appendChild(m);
+  const name = $(".dname", m);
+  const pool = () => {
+    let p = Class.present();
+    if (noRepeat) p = p.filter(n => !drawn.includes(n));
+    return p;
+  };
+  const info = () => {
+    $(".dinfo", m).textContent = `المتبقيات في القرعة: ${pool().length}`;
+    $(".drawn", m).innerHTML = drawn.map(n => `<span>${n}</span>`).join("");
+  };
+  $('[data-a="rep"]', m).onclick = e => { noRepeat = !noRepeat; e.currentTarget.classList.toggle("on", noRepeat); info(); };
+  $('[data-a="reset"]', m).onclick = () => { drawn = []; Store.set("drawn", { date: today(), names: drawn }); name.textContent = "من ستكون المحظوظة؟ ✨"; info(); };
+  $('[data-a="go"]', m).onclick = () => {
+    if (spinning) return;
+    const p = pool();
+    if (!p.length) { name.textContent = "انتهت الأسماء 🌟 اضغطي تصفير"; Sound.wrong(); return; }
+    spinning = true; name.classList.remove("win"); name.classList.add("spin");
+    const win = p[Math.floor(Math.random() * p.length)];
+    let t = 0, delay = 50;
+    const step = () => {
+      name.textContent = p[Math.floor(Math.random() * p.length)]; Sound.tick();
+      t += delay; delay *= 1.12;
+      if (t < 2300) setTimeout(step, delay);
+      else {
+        name.textContent = win; name.classList.remove("spin"); name.classList.add("win");
+        if (!drawn.includes(win)) drawn.push(win);
+        Store.set("drawn", { date: today(), names: drawn });
+        spinning = false; celebrate(); info();
+      }
+    };
+    step();
+  };
+  $(".xbtn", m).onclick = () => closeModal("drawM");
+  m.onclick = e => { if (e.target === m) closeModal("drawM"); };
+  info();
+}
+function closeModal(id) { const b = $("#" + id); if (b) b.remove(); }
+document.addEventListener("click", e => { if (e.target.closest(".drawq")) openDraw(); });
+
+/* ---------------- 🏆 لوحة نقاط المجموعات ---------------- */
+function openBoard() {
+  if ($("#board")) return closeModal("board");
+  const b = document.createElement("div"); b.id = "board"; b.className = "modal";
+  const render = () => {
+    const mx = Math.max(...Class.points);
+    b.innerHTML = `<div class="panel" style="width:1500px"><button class="xbtn">✕</button><h2>🏆 نقاط المجموعات</h2><div class="gteams">${CONFIG.groups.map((g, i) => `
+      <div class="gteam ${mx > 0 && Class.points[i] === mx ? "lead" : ""}" style="--gc:${g.color}"><div class="e">${g.emoji}</div><div class="nm">${g.name}</div><div class="pt">${Class.points[i]}</div>
+      <div class="pb"><button class="rbtn" data-g="${i}" data-d="1">+</button><button class="rbtn" data-g="${i}" data-d="-1">−</button></div></div>`).join("")}</div>
+      <div style="text-align:center;margin-top:20px"><button class="btn light sm" data-a="zero">↺ تصفير النقاط</button></div></div>`;
+    $(".xbtn", b).onclick = () => closeModal("board");
+    $('[data-a="zero"]', b).onclick = () => { Class.points = CONFIG.groups.map(() => 0); Class.savePoints(); render(); classChanged(); };
+    $$("[data-g]", b).forEach(x => x.onclick = () => {
+      const i = +x.dataset.g, d = +x.dataset.d; Class.points[i] = Math.max(0, Class.points[i] + d); Class.savePoints();
+      if (d > 0) { Sound.success(); confetti(25); } else Sound.click();
+      render(); classChanged();
+    });
+  };
+  b.onclick = e => { if (e.target === b) closeModal("board"); };
+  render(); $("#stage").appendChild(b);
+}
+
+/* ======================= قوالب الشرائح الجديدة ======================= */
+
+/* الافتتاح: آية ودعاء */
+T.opening = {
+  noHead: true,
+  html: s => `<div class="body center" style="gap:30px">
+      <div class="basmala a">${s.basmala}</div>
+      <div class="card a" style="padding:40px 90px"><div class="ayah">${s.ayah}</div><div class="ref">${s.ref}</div></div>
+      <div class="dua a">${s.dua}</div>
+      <p class="lead a" style="font-size:32px">🤲 لنردّد معًا قبل أن نبدأ</p></div>`
+};
+
+/* الترحيب */
+T.welcome = {
+  noHead: true,
+  html: s => `<div class="body center">
+      <div class="hero-emoji a float">${s.emoji}</div>
+      <h1 class="a">${s.heading}</h1>
+      <p class="lead a">${s.sub}</p>
+      <div class="chips a"><span class="chip">📚 ${L.subject}</span><span class="chip">🎓 ${L.grade}</span><span class="chip">🏫 ${L.school}</span></div>
+      <p class="teacher a">${L.teacher}</p></div>`
+};
+
+/* التحضير: قائمة الطالبات بالأسماء (يُحفظ تلقائيًا) */
+T.attend = {
+  html: () => {
+    let day = "", hij = "";
+    try {
+      day = new Intl.DateTimeFormat("ar-SA", { weekday: "long" }).format(new Date());
+      hij = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", { day: "numeric", month: "long", year: "numeric" }).format(new Date());
+    } catch (e) {}
+    return `<div class="att-top a">
+        <span class="stat">📅 ${day} ${hij}</span>
+        <span class="stat">✅ حاضرات <b class="cP">0</b></span><span class="stat">❌ غائبات <b class="cA">0</b></span><span class="stat">⏰ متأخرات <b class="cL">0</b></span>
+        <span style="flex:1"></span>
+        <button class="btn mint sm" data-a="all">✅ الكل حاضرات</button>
+        <button class="btn light sm" data-a="edit">✏️ تعديل الأسماء</button></div>
+      <div class="addrow a hide"><input type="text" placeholder="✍️ اسم طالبة جديدة ثم Enter"><button class="btn sm" data-a="add">➕ إضافة</button>
+        <button class="btn light sm" data-a="orig">↺ القائمة الأصلية</button><span class="muted" style="font-size:22px;font-weight:700">اضغطي ✕ لحذف اسم</span></div>
+      <div class="att-grid a"></div>
+      <p class="muted a" style="font-size:22px;font-weight:700;text-align:center;margin-top:10px">👆 اضغطي على الاسم للتبديل: ✅ حاضرة ← ❌ غائبة ← ⏰ متأخرة — يُحفَظ التحضير تلقائيًا 💾</p>`;
+  },
+  init(el) {
+    const grid = $(".att-grid", el), ICON = { present: "✅", absent: "❌", late: "⏰" }, NEXT = { present: "absent", absent: "late", late: "present" };
+    let editing = false;
+    const render = () => {
+      const n = Class.students.length, cols = n > 36 ? 7 : n > 30 ? 6 : 5;
+      grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+      grid.classList.toggle("editing", editing);
+      grid.innerHTML = Class.students.map((nm, i) => `<button class="st ${Class.status(nm)}" data-i="${i}" style="font-size:${cols > 5 ? 21 : 24}px">
+        <span class="ic">${ICON[Class.status(nm)]}</span><span>${nm}</span><span class="del" data-del="${i}">✕</span></button>`).join("");
+      const c = s => Class.students.filter(x => Class.status(x) === s).length;
+      $(".cP", el).textContent = c("present"); $(".cA", el).textContent = c("absent"); $(".cL", el).textContent = c("late");
+    };
+    grid.onclick = e => {
+      const del = e.target.closest("[data-del]");
+      if (del) { const nm = Class.students[+del.dataset.del]; Class.students.splice(+del.dataset.del, 1); delete Class.att[nm]; Class.saveStudents(); Class.saveAtt(); Sound.click(); render(); classChanged(); return; }
+      const b = e.target.closest(".st"); if (!b || editing) return;
+      const nm = Class.students[+b.dataset.i]; Class.att[nm] = NEXT[Class.status(nm)]; Class.saveAtt(); Sound.pop(); render(); classChanged();
+    };
+    $('[data-a="all"]', el).onclick = () => { Class.att = {}; Class.saveAtt(); render(); classChanged(); celebrate("الكل حاضرات! ما شاء الله 💚"); };
+    $('[data-a="edit"]', el).onclick = e => { editing = !editing; $(".addrow", el).classList.toggle("hide", !editing); e.currentTarget.textContent = editing ? "✔ تم" : "✏️ تعديل الأسماء"; render(); };
+    const inp = $(".addrow input", el);
+    const add = () => { const v = inp.value.trim(); if (!v || Class.students.includes(v)) return; Class.students.push(v); Class.saveStudents(); inp.value = ""; Sound.success(); render(); classChanged(); };
+    $('[data-a="add"]', el).onclick = add;
+    inp.onkeydown = e => { if (e.key === "Enter") add(); };
+    $('[data-a="orig"]', el).onclick = () => { Class.students = CONFIG.students.slice(); Class.saveStudents(); render(); classChanged(); toast("تمت استعادة القائمة الأصلية"); };
+    render();
+  }
+};
+
+/* لوحة نقاط المجموعات (بدون توزيع) */
+T.teams = {
+  html: () => `<div class="gteams a" style="flex:1;align-content:center"></div>
+    <div class="row a" style="justify-content:center;gap:18px;margin-top:24px">
+      <button class="btn light" data-a="zero">↺ تصفير النقاط</button>
+      <span class="lead" style="font-size:30px">⭐ تُحفَظ النقاط تلقائيًا — ويمكن فتحها من زر 🏆 في أي شريحة</span></div>`,
+  init(el) {
+    const box = $(".gteams", el);
+    const render = () => {
+      const mx = Math.max(...Class.points);
+      box.innerHTML = CONFIG.groups.map((g, i) => `<div class="gteam ${mx > 0 && Class.points[i] === mx ? "lead" : ""}" style="--gc:${g.color};padding:34px 20px">
+        <div class="e" style="font-size:100px">${g.emoji}</div><div class="nm" style="font-size:40px">${g.name}</div><div class="pt" style="font-size:110px">${Class.points[i]}</div>
+        <div class="pb"><button class="rbtn" data-g="${i}" data-d="1">+</button><button class="rbtn" data-g="${i}" data-d="-1">−</button></div></div>`).join("");
+      $$("[data-g]", box).forEach(x => x.onclick = () => {
+        const i = +x.dataset.g, d = +x.dataset.d; Class.points[i] = Math.max(0, Class.points[i] + d); Class.savePoints();
+        if (d > 0) { Sound.success(); confetti(25); } else Sound.click();
+        render();
+      });
+    };
+    $('[data-a="zero"]', el).onclick = () => { Class.points = CONFIG.groups.map(() => 0); Class.savePoints(); render(); };
+    onClassChange.push(render);
+    render();
+  }
+};
+
+/* التهيئة: تصويت مباشر يتحوّل إلى مخطط */
+T.vote = {
+  html: s => `<div class="vote">
+      <div class="vbars a">${s.options.map((o, i) => `<div class="vbar" style="--c:${COLORS[i % COLORS.length]}"><div class="v">0</div><div class="b"></div></div>`).join("")}</div>
+      <div class="vopts a">${s.options.map((o, i) => `<div class="vopt"><button class="vadd" data-i="${i}"><span class="ve">${o.icon}</span>${o.name}</button><button class="vminus" data-i="${i}">−</button></div>`).join("")}</div>
+      <div class="row a" style="justify-content:center;gap:18px;align-items:center">
+        <span class="stat">🗳️ عدد الأصوات: <b class="tot">0</b></span>
+        <button class="btn" data-a="rev">🤔 ماذا صنعنا للتو؟</button><button class="btn light sm" data-a="zero">↺ تصفير</button></div>
+      <div class="vrev hide">${s.reveal}</div></div>`,
+  init(el, s) {
+    const votes = s.options.map(() => 0);
+    const render = () => {
+      const mx = Math.max(5, ...votes), top = Math.max(...votes);
+      $$(".vbar", el).forEach((b, i) => { $(".b", b).style.height = (votes[i] / mx * 100) + "%"; $(".v", b).textContent = votes[i]; b.classList.toggle("top", top > 0 && votes[i] === top); });
+      $(".tot", el).textContent = votes.reduce((a, b) => a + b, 0);
+    };
+    $$(".vadd", el).forEach(b => b.onclick = () => { votes[+b.dataset.i]++; Sound.pop(); render(); });
+    $$(".vminus", el).forEach(b => b.onclick = () => { votes[+b.dataset.i] = Math.max(0, votes[+b.dataset.i] - 1); Sound.click(); render(); });
+    $('[data-a="zero"]', el).onclick = () => { votes.fill(0); $(".vrev", el).classList.add("hide"); render(); };
+    $('[data-a="rev"]', el).onclick = () => { $(".vrev", el).classList.remove("hide"); celebrate(); };
+    render();
+  }
+};
+
+/* ربط بالوطن */
+T.national = {
+  html: s => `<div class="row" style="flex:1;align-items:center;gap:44px">
+      <div class="card a" style="flex:1;font-size:38px;line-height:1.8;font-weight:600;border-right:12px solid #0F7A4F">
+        <div style="font-size:90px">💚</div><div style="font-size:40px;font-weight:900;color:#0F7A4F;margin-bottom:10px">هل تعلمين؟</div>${s.fact}</div>
+      <div class="col a" style="flex:1.05;gap:22px;align-items:center">
+        <div class="q" style="font-size:44px">${s.question}</div>
+        <div class="ideas" style="min-height:240px;align-content:flex-start"></div>
+        <button class="btn" data-a="idea">💡 فكرة</button></div></div>`,
+  init(el, s) {
+    const ideas = [...s.ideas];
+    $('[data-a="idea"]', el).onclick = () => {
+      if (!ideas.length) return toast("أحسنتنّ! بالبيانات نخدم وطننا 💚");
+      $(".ideas", el).insertAdjacentHTML("beforeend", `<span style="font-size:32px">${ideas.shift()}</span>`); Sound.pop();
+    };
+  }
+};
+
+/* عنوان الدرس */
+T.title = {
+  noHead: true,
+  html: s => `<div class="body center">
+      <span class="orbit float" style="top:60px;right:180px">📊</span>
+      <span class="orbit float" style="top:120px;left:200px;animation-delay:.6s">📈</span>
+      <span class="orbit float" style="bottom:120px;right:260px;animation-delay:1.2s">🥧</span>
+      <span class="orbit float" style="bottom:90px;left:260px;animation-delay:1.8s">🍩</span>
+      <span class="badge a" style="font-size:36px">${L.unit}</span>
+      <h1 class="a">${L.title}</h1>
+      <p class="lead a">عرض بيانات حياتنا بصورة واضحة باستخدام مايكروسوفت إكسل</p>
+      ${s.ayah ? `<div class="a" style="margin-top:26px"><div class="ayah" style="font-size:54px">${s.ayah}</div><div class="ref">${s.ref}</div></div>` : ""}</div>`
+};
+
+/* فهم قرائي */
+T.reading = {
+  html: s => `<div class="reading">
+      <div class="card passage a"><h3>📖 ${s.title}</h3>${s.passage.map((p, i) => `<span class="sn" data-i="${i}">${p}</span> `).join("")}
+        <div class="muted" style="font-size:22px;font-weight:700;margin-top:10px">🖍️ اضغطي على أي جملة لتظليلها كدليل على إجابتك</div></div>
+      <div class="rq a">
+        <div class="dotsnav">${s.questions.map((_, i) => `<i data-i="${i}"></i>`).join("")}</div>
+        <div class="qbox card" style="flex:1;display:flex;flex-direction:column;gap:18px"></div>
+        <div class="row" style="justify-content:center;gap:16px"><button class="btn light sm" data-a="prev">→ السابق</button><button class="btn sm" data-a="next">السؤال التالي ←</button></div>
+      </div></div>`,
+  init(el, s) {
+    let qi = 0; const done = new Set(), box = $(".qbox", el);
+    $$(".sn", el).forEach(sn => sn.onclick = () => { sn.classList.toggle("mark"); Sound.pop(); });
+    const show = () => {
+      const q = s.questions[qi];
+      $$(".dotsnav i", el).forEach((d, i) => { d.className = i === qi ? "on" : done.has(i) ? "ok" : ""; });
+      box.innerHTML = `<div class="muted" style="font-size:24px;font-weight:800">سؤال ${qi + 1} من ${s.questions.length}</div><div class="qt">${q.q}</div>` +
+        (q.options ? `<div class="ropts">${q.options.map((o, i) => `<button class="opt" data-i="${i}">${o.text}</button>`).join("")}</div>`
+                   : `<button class="btn sun sm" data-a="ans" style="align-self:center">💡 أظهري الإجابة</button><div class="ansbox hide">${q.answer}</div>`) +
+        `<div class="fb" style="font-size:36px;margin-top:0;min-height:50px"></div>`;
+      const fb = $(".fb", box);
+      $$(".opt", box).forEach(b => b.onclick = () => {
+        if (q.options[b.dataset.i].correct) { b.classList.add("correct"); fb.className = "fb ok"; fb.textContent = "أحسنتِ! 👏 إجابة صحيحة"; done.add(qi); celebrate(); show2(); }
+        else { b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); fb.className = "fb no"; fb.textContent = "حاولي مرة أخرى 💜"; Sound.wrong(); }
+      });
+      const a = $('[data-a="ans"]', box);
+      if (a) a.onclick = () => { a.classList.add("hide"); $(".ansbox", box).classList.remove("hide"); done.add(qi); Sound.success(); show2(); };
+    };
+    const show2 = () => $$(".dotsnav i", el).forEach((d, i) => { d.className = i === qi ? "on" : done.has(i) ? "ok" : ""; });
+    $('[data-a="next"]', el).onclick = () => { if (qi < s.questions.length - 1) { qi++; Sound.click(); show(); } else toast("أنهيتِ أسئلة الفهم القرائي! 🌟"); };
+    $('[data-a="prev"]', el).onclick = () => { if (qi > 0) { qi--; Sound.click(); show(); } };
+    show();
+  }
+};
+
+/* ربط بالرياضيات: مكوّنات التمثيل بالأعمدة */
+T.mathlink = {
+  html: s => {
+    const d = CONFIG.datasets[s.data], W = 820, H = 470, pc = (v, t) => (v / t * 100) + "%";
+    const Z = { x: [20, 414, 736, 56], y: [756, 10, 64, 414], bars: [20, 24, 736, 390] };
+    return `<div class="mlink">
+      <div class="mchart a"><div class="ct" data-z="title">${d.title}</div>
+        <div class="plot">${colChart(d, { labels: true })}
+          ${Object.entries(Z).map(([k, [x, y, w, h]]) => `<div class="zone" data-z="${k}" style="left:${pc(x, W)};top:${pc(y, H)};width:${pc(w, W)};height:${pc(h, H)}"></div>`).join("")}</div></div>
+      <div class="parts">
+        ${s.parts.map(p => `<button class="part a" data-k="${p.k}"><b>${p.h}</b><span class="exp">${p.p}</span></button>`).join("")}
+        <div class="prompt a" style="font-size:28px">${s.note}</div>
+      </div></div>`;
+  },
+  init(el) {
+    $$(".part", el).forEach(p => p.onclick = () => {
+      $$(".part", el).forEach(x => x.classList.toggle("on", x === p));
+      $$("[data-z]", el).forEach(z => z.classList.toggle("on", z.dataset.z === p.dataset.k));
+      Sound.pop();
+    });
+  }
+};
+
+/* ارسمي بنفسك: تمثيل بالأعمدة على شبكة */
+T.builder = {
+  html: s => {
+    const d = CONFIG.datasets[s.data], vals = d.series[0].values, R = Math.max(8, Math.max(...vals) + 1), n = d.labels.length;
+    let g = "";
+    for (let r = R; r >= 1; r--) {
+      g += `<div class="bax">${r}</div>` + d.labels.map((_, c) => `<button class="bc" data-c="${c}" data-r="${r}" style="--c:${COLORS[c % COLORS.length]}"></button>`).join("");
+    }
+    g += `<div class="bax">0</div>` + d.labels.map(l => `<div class="blab">${l}</div>`).join("");
+    return `<div class="builder">
+      <div class="col a" style="gap:14px;align-items:center"><div class="ct" style="font-size:32px;font-weight:900;color:var(--pd)">${d.title}</div>
+        <div class="bgrid" style="grid-template-columns:60px repeat(${n},130px);grid-template-rows:repeat(${R},52px) 56px">${g}</div></div>
+      <div class="col grow a" style="gap:22px">
+        <table class="data"><tr><th>الهواية</th><th>${d.series[0].name}</th></tr>${d.labels.map((l, i) => `<tr><td>${l}</td><td>${vals[i]}</td></tr>`).join("")}</table>
+        <div class="prompt">👆 اضغطي داخل كل عمود عند الرقم المناسب لترسمي الأعمدة… مثل الرياضيات تمامًا!</div>
+        <div class="row" style="gap:14px"><button class="btn mint" data-a="check">✅ تحقّقي</button><button class="btn light" data-a="clear">↺ مسح</button><button class="btn light" data-a="show">👁️ الحل</button></div>
+        <div class="fb bmsg" style="margin-top:0;font-size:36px"></div></div></div>`;
+  },
+  init(el, s) {
+    const d = CONFIG.datasets[s.data], vals = d.series[0].values, h = d.labels.map(() => 0);
+    const paint = () => $$(".bc", el).forEach(b => { b.classList.toggle("f", +b.dataset.r <= h[+b.dataset.c]); b.classList.remove("bad", "good"); });
+    $$(".bc", el).forEach(b => b.onclick = () => { const c = +b.dataset.c, r = +b.dataset.r; h[c] = h[c] === r ? r - 1 : r; Sound.pop(); paint(); });
+    $('[data-a="clear"]', el).onclick = () => { h.fill(0); paint(); $(".bmsg", el).textContent = ""; };
+    $('[data-a="show"]', el).onclick = () => { vals.forEach((v, i) => h[i] = v); paint(); Sound.click(); };
+    $('[data-a="check"]', el).onclick = () => {
+      paint(); let ok = 0;
+      vals.forEach((v, c) => { const good = h[c] === v; if (good) ok++; $$(`.bc[data-c="${c}"]`, el).forEach(b => b.classList.add(good ? "good" : "bad")); });
+      const m = $(".bmsg", el);
+      if (ok === vals.length) { m.className = "fb ok bmsg"; m.textContent = "أحسنتِ! 👏 رسم صحيح ودقيق"; celebrate(); }
+      else { m.className = "fb no bmsg"; m.textContent = `${ok} من ${vals.length} صحيحة… راجعي الأعمدة 💜`; Sound.wrong(); }
+    };
+  }
+};
+
+/* أنواع المخططات (جيجسو) */
+T.types = {
+  html: s => `<div class="types">${s.items.map((t, i) => { const g = CONFIG.groups[t.group]; return `<button class="tcard a" data-i="${i}">
+        ${g ? `<span class="gtag" style="background:${g.color}">${g.emoji} مجموعة ${g.name} تشرح</span>` : ""}
+        <div class="ico">${t.icon}</div><div class="mini">${drawChart(t.key, CONFIG.datasets[t.data], { noLegend: true, pct: t.key === "pie" || t.key === "doughnut" })}</div><h3>${t.name}</h3><div class="tap">اضغطي للتعرّف عليه</div></button>`; }).join("")}
+     </div>${s.judge != null ? `<p class="lead a" style="text-align:center;font-size:30px;margin-top:18px">⚖️ مجموعة ${CONFIG.groups[s.judge].emoji} ${CONFIG.groups[s.judge].name}: تقيّم الشرح وتطرح سؤالًا على كل مجموعة!</p>` : ""}<div class="detailHost"></div>`,
+  init(el, s) {
+    const host = $(".detailHost", el);
+    $$(".tcard", el).forEach(c => c.onclick = () => {
+      const t = s.items[c.dataset.i], d = CONFIG.datasets[t.data]; c.classList.add("seen"); Sound.pop();
+      host.innerHTML = `<div class="detail"><button class="xbtn">✕</button>
+         <div class="dchart"><div style="text-align:center;font-size:30px;font-weight:900;color:var(--pd)">${d.title}</div>${drawChart(t.key, d, { labels: true, pct: t.key === "pie" || t.key === "doughnut" })}
+           <div class="muted" style="text-align:center;font-size:20px">* بيانات افتراضية للتدريب</div></div>
+         <div class="dtext"><h3>${t.icon} المخطط ${t.name}</h3><p>${t.def}</p><div class="use">${t.use}</div></div></div>`;
+      $(".xbtn", host).onclick = () => { host.innerHTML = ""; if ($$(".tcard.seen", el).length === s.items.length) toast("تعرّفتِ على كل الأنواع! 👏"); };
+    });
+  }
+};
+
+/* سؤال على مخطط */
+T.chartq = {
+  html: s => { const d = CONFIG.datasets[s.data]; return `<div class="row" style="flex:1;align-items:center;gap:40px">
+      <div class="card a" style="flex:1.2;height:640px;display:flex;flex-direction:column"><div style="text-align:center;font-size:32px;font-weight:900;color:var(--pd)">${d.title}</div>
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column">${drawChart("column", d, { labels: true })}</div></div>
+      <div class="col grow" style="gap:22px">
+        <div class="q a" style="font-size:42px;text-align:right">${s.question}</div>
+        <div class="ropts a">${s.options.map((o, i) => `<button class="opt" data-i="${i}" style="font-size:36px">${o.text}</button>`).join("")}</div>
+        <div class="fb" style="margin-top:0"></div>
+        <button class="btn sun a" data-a="how" style="align-self:center">🤔 كيف عرفتِ؟</button>
+        <div class="ansbox hide">✅ ${s.answer}</div></div></div>`; },
+  init(el, s) {
+    const fb = $(".fb", el);
+    $$(".opt", el).forEach(b => b.onclick = () => {
+      if (s.options[b.dataset.i].correct) { b.classList.add("correct"); fb.className = "fb ok"; fb.textContent = "أحسنتِ! 👏 إجابة صحيحة"; celebrate(); }
+      else { b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); fb.className = "fb no"; fb.textContent = "حاولي مرة أخرى 💜"; Sound.wrong(); }
+    });
+    $('[data-a="how"]', el).onclick = e => { e.currentTarget.classList.add("hide"); $(".ansbox", el).classList.remove("hide"); Sound.success(); };
+  }
+};
+
+/* سؤال إبداعي – مهارات تفكير عليا */
+T.hots = {
+  html: s => `<div class="body center" style="gap:26px">
+      <div style="font-size:110px" class="a float">💡</div>
+      <div class="hq a">${s.question}</div>
+      <div class="ideas a"></div>
+      <div class="addidea a"><input type="text" placeholder="✍️ اكتبي فكرة الطالبة ثم Enter"><button class="btn sun sm" data-a="ans">✅ الإجابة النموذجية</button></div>
+      <div class="ansbox hide" style="max-width:1400px">✅ ${s.answer}</div></div>`,
+  init(el) {
+    const inp = $("input", el);
+    inp.onkeydown = e => { if (e.key === "Enter" && inp.value.trim()) { $(".ideas", el).insertAdjacentHTML("beforeend", `<span>🙋‍♀️ ${inp.value.trim()}</span>`); inp.value = ""; Sound.pop(); } };
+    $('[data-a="ans"]', el).onclick = () => { $(".ansbox", el).classList.remove("hide"); Sound.success(); };
+  }
+};
+
+/* حل المشكلات – 5 مجموعات */
+T.problems = {
+  html: s => `<div class="roles a">${s.roles.map(r => `<span class="chip">${r}</span>`).join("")}</div>
+    <div class="groups" style="margin-top:18px;grid-template-columns:repeat(5,1fr);gap:18px">${s.items.map((p, i) => { const g = CONFIG.groups[i] || {}; return `<div class="flip a"><div class="in">
+        <div class="fa" style="justify-content:flex-start;padding:18px;border-top:10px solid ${g.color}"><div style="font-size:26px;font-weight:900;color:${g.color}">${g.emoji} ${g.name}</div>
+          <h3 style="font-size:30px;margin-top:6px">${p.title}</h3><div style="font-size:24px;font-weight:800;margin-top:4px">❓ ${p.q}</div>
+          <table class="mt">${p.rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table>
+          <div class="tap">ارسمن المخطط ✏️ ثم اضغطن</div></div>
+        <div class="fb2" style="background:linear-gradient(135deg,${g.color},#3E2A7A)"><h3>${p.icon}</h3><div style="font-size:38px;font-weight:900">${p.ans}</div><p>${p.why}</p></div></div></div>`; }).join("")}</div>
+    <div class="row a" style="justify-content:center;align-items:center;margin-top:16px;gap:30px">${timerHTML(s.seconds, "وقت الحل")}
+      <span class="lead" style="font-size:28px">✏️ ارسمن المخطط على الورقة، ثم تعرض المتحدثة <b>القرار</b> 🏆</span>
+      <button class="btn light sm drawq">🎲 من تعرض؟</button></div>`,
+  init(el) { $$(".flip", el).forEach(f => f.onclick = () => { f.classList.toggle("on"); if (f.classList.contains("on")) Sound.success(); }); }
+};
+
+/* ورقة العمل */
+T.worksheet = {
+  html: s => `<div class="ws">${s.items.map(it => `<div class="wsi a"><div class="e">${it.e}</div><h4>${it.h}</h4><p>${it.p}</p></div>`).join("")}</div>
+    <div class="row a" style="justify-content:center;align-items:center;gap:30px;margin-top:22px">
+      <a class="btn" href="${s.file}" target="_blank" download>📄 افتحي ورقة العمل</a>
+      ${timerHTML(s.seconds, "وقت الحل")}
+      <span class="lead" style="font-size:28px">📏 استخدمي القلم والمسطرة… مثل الرياضيات!</span></div>`
+};
+
+/* الختام */
+T.closing = {
+  noHead: true,
+  html: s => `<div class="body center" style="gap:22px">
+      <div class="hero-emoji a float" style="font-size:130px">${s.emoji}</div>
+      <h1 class="a">${s.heading}</h1>
+      <p class="lead a">${s.sub}</p>
+      <div class="hw a">${s.homework}</div>
+      <div class="dua a" style="font-size:36px">🤲 ${s.dua}</div>
+      <button class="btn sun a" data-a="clap" style="font-size:38px">👏 صفّقي لنفسكِ!</button></div>`,
+  init(el) { $('[data-a="clap"]', el).onclick = () => { clap(); confetti(); }; }
+};
+
+
+/* بطاقات قلابة */
+T.flips = {
+  html: s => `<div class="flips" style="grid-template-columns:repeat(${s.cols || 3},1fr)">
+    ${s.cards.map(c => `<div class="flip a"><div class="in">
+        <div class="fa"><div style="font-size:52px;font-weight:900">${c.front}</div><div class="tap">اضغطي لكشف الناتج</div></div>
+        <div class="fb2"><div style="font-size:120px;font-weight:900">${c.back}</div><div style="font-size:32px;font-weight:800">${c.note || ""}</div></div>
+      </div></div>`).join("")}
+    </div><p class="lead a" style="text-align:center;margin-top:24px">🤔 احسبي في ذهنك أولًا… ثم اكشفي البطاقة!</p>`,
+  init(el) { $$(".flip", el).forEach(f => f.onclick = () => { f.classList.toggle("on"); Sound.pop(); }); }
+};
+
+/* سؤال اختيار من متعدد */
+T.mcq = {
+  html: s => `<div class="body center" style="gap:34px">
+      <div class="q a">${s.question}</div>
+      <div class="opts" style="${s.options.length === 3 ? "grid-template-columns:1fr;max-width:1100px" : ""}">${s.options.map((o, i) => `<button class="opt a" data-i="${i}"><span class="ic">${o.icon || ""}</span>${o.text}</button>`).join("")}</div>
+      <div class="fb"></div><div class="explain hide">${s.explain || ""}</div></div>`,
+  init(el, s) {
+    const fb = $(".fb", el);
+    $$(".opt", el).forEach(b => b.onclick = () => {
+      const o = s.options[b.dataset.i];
+      if (o.correct) {
+        $$(".opt", el).forEach(x => x !== b && x.classList.add("dim"));
+        b.classList.add("correct");
+        fb.className = "fb ok"; fb.textContent = "أحسنتِ! 👏 إجابة صحيحة";
+        if (s.explain) $(".explain", el).classList.remove("hide");
+        celebrate();
+      } else {
+        b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong");
+        fb.className = "fb no"; fb.textContent = "حاولي مرة أخرى 💜"; Sound.wrong();
+      }
+    });
+  }
+};
+
+/* الربط بين الدرسين */
+T.bridge = {
+  html: s => `<div class="bridge">
+      <div class="card a"><div style="font-size:120px">${s.from.icon}</div><h3>${s.from.title}</h3><p>${s.from.text}</p></div>
+      <div class="arrow-big a">⬅</div>
+      <div class="card a" style="border:5px solid var(--p2)"><div style="font-size:120px">${s.to.icon}</div><h3>${s.to.title}</h3><p>${s.to.text}</p></div>
+    </div><p class="q a" style="font-size:44px;margin-top:10px">${s.question}</p>`
+};
+
+/* الأهداف: تظهر تدريجيًا */
+T.goals = {
+  html: s => `<div class="col" style="gap:18px;flex:1">
+      ${s.goals.map((g, i) => `<div class="card goal invis" style="padding:20px 36px;font-size:38px;font-weight:800;display:flex;gap:20px;align-items:center">
+        <span style="background:var(--lav2);color:var(--p);min-width:60px;height:60px;border-radius:50%;display:grid;place-items:center;font-weight:900">${i + 1}</span>${g}</div>`).join("")}
+    </div>`,
+  /* تظهر الأهداف تلقائيًا واحدًا تلو الآخر عند فتح الشريحة */
+  init(el, s, api) {
+    const items = $$(".goal", el); let timers = [];
+    const clear = () => { timers.forEach(clearTimeout); timers = []; };
+    api.enter.push(() => {
+      clear();
+      items.forEach(it => { it.classList.add("invis"); it.style.animation = ""; });
+      items.forEach((it, i) => timers.push(setTimeout(() => {
+        it.classList.remove("invis"); it.style.animation = "rise .6s both"; Sound.pop();
+      }, 700 + i * 900)));
+    });
+    api.leave.push(clear);
+  }
+};
+
+/* العصف الذهني */
+T.storm = {
+  html: s => `<div class="storm"><div class="core a">${s.core}</div><div class="notes"></div></div>
+     <div class="addidea a"><button class="btn sun sm" data-a="idea">💡 فكرة جديدة</button>
+     <input type="text" placeholder="✍️ اكتبي فكرة طالبة ثم Enter"></div>`,
+  init(el, s) {
+    const pos = [[15, 12], [72, 10], [8, 52], [80, 50], [22, 86], [70, 88], [46, 6], [48, 90], [3, 30], [88, 28]];
+    let k = 0, ideas = [...s.ideas];
+    const add = (txt, user) => {
+      const [x, y] = pos[k % pos.length], n = document.createElement("div");
+      n.className = "note" + (user ? " user" : ""); n.textContent = txt;
+      n.style.left = x + "%"; n.style.top = y + "%"; n.style.transform = `translate(-50%,-50%) rotate(${Math.random() * 8 - 4}deg)`;
+      $(".notes", el).appendChild(n); k++; Sound.pop();
+    };
+    $('[data-a="idea"]', el).onclick = () => ideas.length ? add(ideas.shift()) : toast("انتهت أفكاري… دوركنّ الآن! 😄");
+    const inp = $("input", el);
+    inp.onkeydown = e => { if (e.key === "Enter" && inp.value.trim()) { add("🙋‍♀️ " + inp.value.trim(), true); inp.value = ""; } };
+  }
+};
+
+/* التعريف بالفراغات */
+T.blanks = {
+  html: s => `<div class="body center" style="gap:40px">
+      <div class="card a def">${s.text.replace(/\[(.+?)\]/g, '<span class="blank" data-w="$1">$1</span>')}</div>
+      <p class="lead a">👆 اضغطي على كل فراغ لكشف الكلمة — توقّعيها قبل الضغط!</p>
+      <div class="prompt a hide tipbox" style="font-size:36px">${s.tip}</div></div>`,
+  init(el) {
+    $$(".blank", el).forEach(b => b.onclick = () => {
+      b.classList.add("on"); Sound.pop();
+      if ($$(".blank", el).every(x => x.classList.contains("on"))) { $(".tipbox", el).classList.remove("hide"); celebrate("أكملتِ التعريف! 🌟"); }
+    });
+  }
+};
+
+/* مختبر المخططات */
+T.lab = {
+  html: s => {
+    const d = CONFIG.datasets[s.data];
+    return `<div class="lab">
+      <div class="card chartbox a"><div style="text-align:center;font-size:34px;font-weight:900;color:var(--pd)">${d.title}</div><div class="labchart" style="flex:1;min-height:0;display:flex;flex-direction:column"></div></div>
+      <div class="side">
+        <div class="seg a">${[["column", "📊 عمودي"], ["line", "📈 خطي"], ["pie", "🥧 دائري"], ["doughnut", "🍩 مجوف"]].map(([k, t], i) => `<button data-t="${k}" class="${i ? "" : "on"}">${t}</button>`).join("")}</div>
+        <table class="editor a"><tr><th>النوع</th>${d.series.map(x => `<th>${x.name}</th>`).join("")}</tr>
+          ${d.labels.map((l, i) => `<tr><td>${l}</td>${d.series.map((x, j) => `<td><span class="stp"><button data-s="${i},${j},5">+</button><span id="v${i}${j}">${x.values[i]}</span><button data-s="${i},${j},-5">−</button></span></td>`).join("")}</tr>`).join("")}
+        </table>
+        <button class="toggle a"><span class="sw"></span>🏷️ تسميات البيانات</button>
+        <div class="prompt a">${s.prompt}</div>
+      </div></div>`;
+  },
+  init(el, s) {
+    const d = JSON.parse(JSON.stringify(CONFIG.datasets[s.data]));
+    let type = "column", labels = false;
+    const box = $(".labchart", el);
+    const draw = anim => { box.innerHTML = drawChart(type, d, { labels, anim }); };
+    $$(".seg button", el).forEach(b => b.onclick = () => {
+      $$(".seg button", el).forEach(x => x.classList.remove("on")); b.classList.add("on"); type = b.dataset.t; Sound.click(); draw(true);
+    });
+    $$("[data-s]", el).forEach(b => b.onclick = () => {
+      const [i, j, st] = b.dataset.s.split(",").map(Number);
+      d.series[j].values[i] = Math.max(0, Math.min(200, d.series[j].values[i] + st));
+      $("#v" + i + j, el).textContent = d.series[j].values[i]; Sound.click(); draw(false);
+    });
+    $(".toggle", el).onclick = e => { labels = !labels; e.currentTarget.classList.toggle("on", labels); Sound.pop(); draw(false); };
+    draw(true);
+  }
+};
+
+/* فكر – زاوج – شارك */
+T.tps = {
+  html: s => `<div class="card a" style="text-align:center"><div class="q" style="font-size:42px">${s.question}</div></div>
+    <div class="tps">
+      ${[["🤔", "فكّري", "بمفردك بصمت"], ["👭", "زاوجي", "ناقشي زميلتك"], ["📢", "شاركي", "أخبري الفصل"]].map(([e, h, p], i) => `
+      <div class="card a" data-p="${i}"><div class="emo">${e}</div><h3>${h}</h3><p>${p}</p>${timerHTML(s.times[i])}</div>`).join("")}
+    </div>
+    <div style="display:flex;gap:20px;justify-content:center;margin-top:22px" class="a">
+      <button class="btn" data-a="phase">▶ ابدئي مرحلة «فكّري»</button>
+      <button class="btn light" data-a="ans">💡 الإجابة النموذجية</button></div>
+    <div class="fb ok tpsans" style="font-size:38px"></div>`,
+  init(el, s) {
+    let p = -1; const cards = $$(".tps .card", el), names = ["فكّري", "زاوجي", "شاركي"], b = $('[data-a="phase"]', el);
+    b.onclick = () => {
+      if (p >= 0) { cards[p].classList.remove("on"); cards[p].classList.add("done"); $(".timer", cards[p]).api.stop(); }
+      p++;
+      if (p < 3) { cards[p].classList.add("on"); $(".timer", cards[p]).api.start(); Sound.pop();
+        b.textContent = p < 2 ? `⏭ انتقلي إلى «${names[p + 1]}»` : "✅ إنهاء النقاش"; }
+      else { b.classList.add("hide"); clap(); }
+    };
+    $('[data-a="ans"]', el).onclick = () => { $(".tpsans", el).innerHTML = s.answer; Sound.success(); };
+  }
+};
+
+/* اختاري المخطط المناسب للموقف */
+T.scen = {
+  html: s => `<div class="scen">${s.items.map((it, i) => `<div class="card a" data-i="${i}">
+      <div class="txt">${i + 1}) ${it.text}</div>
+      <div class="pick">${[["column", "📊", "عمودي"], ["line", "📈", "خطي"], ["pie", "🥧", "دائري"], ["doughnut", "🍩", "مجوف"]].map(([k, e, t]) => `<button data-k="${k}"><span>${e}</span>${t}</button>`).join("")}</div>
+      <div class="msg"></div></div>`).join("")}</div>`,
+  init(el, s) {
+    $$(".scen .card", el).forEach(c => {
+      const it = s.items[c.dataset.i], msg = $(".msg", c);
+      $$(".pick button", c).forEach(b => b.onclick = () => {
+        if (it.ok.includes(b.dataset.k)) {
+          b.classList.add("right"); c.classList.add("ok"); msg.className = "msg"; msg.textContent = "أحسنتِ! 👏 اختيار موفّق";
+          Sound.success(); confetti(25);
+          if ($$(".scen .card.ok", el).length === s.items.length) setTimeout(() => celebrate("ممتاز! حللتِ كل المواقف 🌟"), 500);
+        } else {
+          b.classList.remove("bad"); void b.offsetWidth; b.classList.add("bad");
+          msg.className = "msg no"; msg.textContent = "حاولي مرة أخرى 💜"; Sound.wrong();
+        }
+      });
+    });
+  }
+};
+
+/* ---------- محاكاة برنامج إكسل ---------- */
+const SIM_TABS = [
+  { id: "file", label: "ملف" }, { id: "home", label: "الشريط الرئيسي" }, { id: "insert", label: "إدراج" },
+  { id: "layout", label: "تخطيط الصفحة" }, { id: "formulas", label: "الصيغ" }, { id: "data", label: "بيانات" },
+  { id: "design", label: "تصميم المخطط", hidden: true, special: true }
+];
+const SIM_RIBBON = {
+  file: [{ id: "save", i: "💾", t: "حفظ" }, { id: "print", i: "🖨️", t: "طباعة" }],
+  home: [{ id: "paste", i: "📋", t: "لصق" }, { id: "bold", i: "𝐁", t: "غامق" }, { id: "fill", i: "🪣", t: "لون التعبئة" }, { id: "sum", i: "Σ", t: "جمع تلقائي" }],
+  insert: [
+    { id: "table", i: "▦", t: "جدول" }, { id: "pics", i: "🖼️", t: "رسومات توضيحية" }, { id: "rec", i: "✨", t: "المخططات الموصى بها" },
+    { id: "column", i: "📊", t: "مخطط عمودي<br>أو شريطي", menu: [
+        { id: "clustered", i: "📊", t: "عمود متفاوت المسافات" }, { id: "stacked", i: "▥", t: "عمود مكدس" }, { id: "col3d", i: "🧊", t: "عمود ثلاثي الأبعاد" }] },
+    { id: "line", i: "📈", t: "مخطط خطي" },
+    { id: "pie", i: "🥧", t: "مخطط دائري<br>أو مجوف", menu: [
+        { id: "pie2d", i: "🥧", t: "دائري ثنائي الأبعاد" }, { id: "pie3d", i: "🧁", t: "دائري ثلاثي الأبعاد" }, { id: "doughnut", i: "🍩", t: "دائري مجوف" }] },
+    { id: "pivot", i: "🔄", t: "PivotChart" }],
+  layout: [{ id: "margins", i: "▢", t: "الهوامش" }, { id: "orient", i: "🔄", t: "الاتجاه" }, { id: "size", i: "📄", t: "الحجم" }],
+  formulas: [{ id: "fx", i: "𝑓𝑥", t: "إدراج دالة" }],
+  data: [{ id: "sort", i: "⇅", t: "فرز" }, { id: "filter", i: "⏷", t: "تصفية" }],
+  design: [
+    { id: "addel", i: "➕", t: "إضافة عنصر<br>المخطط", menu: [
+        { id: "axes", i: "📐", t: "المحاور" }, { id: "ctitle", i: "🔤", t: "عنوان المخطط" },
+        { id: "labels", i: "🏷️", t: "تسميات البيانات", sub: [{ id: "none", i: "🚫", t: "بلا" }, { id: "show", i: "✅", t: "إظهار" }] },
+        { id: "legend", i: "📋", t: "وسيلة الإيضاح" }] },
+    { id: "quick", i: "🧩", t: "تخطيط سريع" }, { id: "colors", i: "🎨", t: "تغيير الألوان" }, { id: "styles", i: "🖌️", t: "أنماط المخطط" }]
+};
+
+T.sim = {
+  html: s => {
+    const cols = s.sheet.head.length, letters = "ABCDEFG".slice(0, cols).split("");
+    const grid = `<table class="xl-grid" data-sim="grid">
+      <tr><th></th>${letters.map(l => `<th>${l}</th>`).join("")}</tr>
+      <tr><th class="rn">1</th><td class="tt" colspan="${cols}">${s.sheet.title}</td></tr>
+      <tr><th class="rn">2</th>${s.sheet.head.map(h => `<td class="hdr">${h}</td>`).join("")}</tr>
+      ${s.sheet.rows.map((r, i) => `<tr><th class="rn">${i + 3}</th>${r.map((c, j) => `<td class="${j ? "" : "hdr"}">${c}</td>`).join("")}</tr>`).join("")}
+    </table>`;
+    return `<div class="simwrap">
+      <div class="xl a">
+        <div class="xl-top"><span>📗 Excel — ${s.file}</span><span>— ☐ ✕</span></div>
+        <div class="xl-tabs">${SIM_TABS.map(t => `<button class="xl-tab ${t.id === "home" ? "on" : ""} ${t.hidden ? "hide" : ""} ${t.special ? "special" : ""}" data-sim="tab:${t.id}">${t.label}</button>`).join("")}</div>
+        <div class="xl-ribbon"></div>
+        <div class="xl-sheet">${grid}<div class="xl-chart hide" data-sim="chart"></div></div>
+        <div class="xl-menu hide"></div>
+      </div>
+      <div class="steps a">
+        <ol>${s.steps.map((st, i) => `<li class="${i ? "" : "now"}"><span class="n">${i + 1}</span><span>${st.text}</span></li>`).join("")}</ol>
+        <div class="simmsg"></div>
+        <div style="display:flex;gap:14px;justify-content:center"><button class="btn sun sm" data-a="hint">💡 تلميح</button><button class="btn light sm" data-a="reset">↺ من جديد</button></div>
+      </div></div>`;
+  },
+  init(el, s) {
+    const xl = $(".xl", el), rib = $(".xl-ribbon", el), menu = $(".xl-menu", el), chartBox = $(".xl-chart", el), msg = $(".simmsg", el);
+    let step = 0, tab = "home", labels = false;
+    const findItem = (list, id) => { for (const b of list) { if (b.id === id) return b; if (b.menu) { const r = findItem(b.menu, id); if (r) return r; } if (b.sub) { const r = findItem(b.sub, id); if (r) return r; } } };
+    const drawRibbon = () => {
+      rib.innerHTML = (SIM_RIBBON[tab] || []).map(b => `<button class="xl-btn" data-sim="btn:${b.id}"><span class="i">${b.i}</span><span>${b.t}</span></button>`).join("");
+      $$(".xl-tab", el).forEach(t => t.classList.toggle("on", t.dataset.sim === "tab:" + tab));
+    };
+    const openMenu = (anchor, items, append) => {
+      const col = `<div class="mcol">${items.map(m => `<button class="xl-mi ${m.sub ? "has" : ""}" data-sim="opt:${m.id}"><span class="i">${m.i}</span>${m.t}</button>`).join("")}</div>`;
+      if (!append) { menu.innerHTML = col; menu.style.top = (anchor.offsetTop + anchor.offsetHeight + 4) + "px"; menu.style.right = (xl.offsetWidth - anchor.offsetLeft - anchor.offsetWidth) + "px"; menu.style.left = "auto"; }
+      else menu.insertAdjacentHTML("beforeend", col);
+      menu.classList.remove("hide");
+    };
+    const drawChartIn = () => {
+      const lab = s.sheet.head.slice(1);
+      if (s.chart === "column") {
+        const d = { labels: s.sheet.rows.map(r => r[0]), series: lab.map((n, j) => ({ name: n, values: s.sheet.rows.map(r => +r[j + 1]) })) };
+        chartBox.innerHTML = `<div class="ct">عنوان المخطط</div><div style="flex:1;min-height:0">${colChart(d, {})}</div>${legend(lab)}`;
+      } else {
+        const vals = s.sheet.rows.map(r => parseFloat(r[1]));
+        chartBox.innerHTML = `<div class="ct">${s.sheet.title}</div><div style="flex:1;min-height:0">${pieChart([vals], { donut: true, labels, pct: true, anim: !labels })}</div>${legend(s.sheet.rows.map(r => r[0]))}`;
+      }
+      chartBox.classList.remove("hide");
+    };
+    const updSteps = () => $$(".steps li", el).forEach((li, i) => { li.className = i < step ? "done" : i === step ? "now" : ""; });
+    const reset = () => {
+      step = 0; tab = "home"; labels = false; drawRibbon(); menu.classList.add("hide"); chartBox.classList.add("hide");
+      $(".xl-grid", el).classList.remove("sel"); $('[data-sim="tab:design"]', el).classList.add("hide");
+      msg.textContent = ""; updSteps();
+    };
+    xl.addEventListener("click", e => {
+      const t = e.target.closest("[data-sim]"); if (!t || step >= s.steps.length) return;
+      const id = t.dataset.sim, st = s.steps[step];
+      if (id !== st.target) {
+        t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake");
+        msg.className = "simmsg no"; msg.textContent = "ليس هنا… جرّبي مكانًا آخر 💜"; Sound.wrong(); return;
+      }
+      $$(".pulse", el).forEach(p => p.classList.remove("pulse"));
+      const [kind, key] = id.split(":");
+      if (kind === "grid") t.classList.add("sel");
+      if (kind === "tab") { tab = key; menu.classList.add("hide"); drawRibbon(); }
+      if (kind === "btn") { const b = findItem(SIM_RIBBON[tab], key); if (b && b.menu) openMenu(t, b.menu); }
+      if (kind === "opt") {
+        const m = findItem(SIM_RIBBON[tab], key);
+        if (m && m.sub) { t.classList.add("act"); openMenu(t, m.sub, true); } else menu.classList.add("hide");
+      }
+      const ef = st.effect || {};
+      if (ef.showTab) $(`[data-sim="tab:${ef.showTab}"]`, el).classList.remove("hide");
+      if (ef.labels) labels = true;
+      if (ef.chart || ef.labels) drawChartIn();
+      step++; updSteps();
+      if (step >= s.steps.length) { msg.className = "simmsg ok"; msg.textContent = "أحسنتِ! أنجزتِ المهمة 🎉"; celebrate(); }
+      else { msg.className = "simmsg ok"; msg.textContent = "صحيح! ✔"; Sound.pop(); }
+    });
+    $('[data-a="hint"]', el).onclick = () => {
+      if (step >= s.steps.length) return;
+      const tg = $(`[data-sim="${s.steps[step].target}"]`, el); if (tg) tg.classList.add("pulse"); Sound.click();
+    };
+    $('[data-a="reset"]', el).onclick = reset;
+    reset();
+  }
+};
+
+/* صح أم خطأ */
+T.tf = {
+  html: s => `<div class="tf">${s.items.map((it, i) => `<div class="tfrow a" data-i="${i}">
+      <div class="s">${it.s}<span class="why hide">${it.why || ""}</span></div>
+      <button class="tfb" data-v="1" style="color:var(--mint)">✔</button><button class="tfb" data-v="0" style="color:var(--pink)">✖</button><span class="res"></span></div>`).join("")}</div>`,
+  init(el, s) {
+    $$(".tfrow", el).forEach(r => {
+      const it = s.items[r.dataset.i];
+      $$(".tfb", r).forEach(b => b.onclick = () => {
+        if ((b.dataset.v === "1") === it.a) {
+          r.classList.remove("no"); r.classList.add("ok"); $(".res", r).textContent = "👏"; $(".why", r).classList.remove("hide"); Sound.success(); confetti(20);
+          if ($$(".tfrow.ok", el).length === s.items.length) setTimeout(() => celebrate("كل الإجابات صحيحة! 🌟"), 500);
+        } else {
+          r.classList.remove("no"); void r.offsetWidth; r.classList.add("no"); $(".res", r).textContent = "💜"; Sound.wrong();
+        }
+      });
+    });
+  }
+};
+
+/* تحدي الدقيقة */
+T.minute = {
+  html: s => `<div class="minute">
+      <div class="col a" style="gap:24px;align-items:center">
+        <div class="flip fc"><div class="in"><div class="fa"><span class="ar"></span><div class="tap">اضغطي لكشف الإجابة</div></div><div class="fb2 en"></div></div></div>
+        <div class="row" style="gap:18px"><button class="btn mint" data-a="yes">✔ عرفتها!</button><button class="btn light" data-a="skip">⏭ التالية</button></div>
+      </div>
+      <div class="col a" style="gap:30px;align-items:center">
+        ${timerHTML(s.seconds, "")}
+        <button class="btn sun" data-a="start">🚀 ابدئي التحدي</button>
+        <div class="score">النقاط<b class="pts">0</b></div>
+      </div></div>`,
+  init(el, s) {
+    let deck = [], pts = 0, on = false;
+    const card = $(".fc", el), timer = $(".timer", el);
+    const show = () => {
+      if (!deck.length) deck = shuffle(s.cards);
+      const c = deck.pop(); card.classList.remove("on");
+      setTimeout(() => { $(".ar", el).textContent = c.ar; $(".en", el).textContent = c.en; }, 200);
+    };
+    card.onclick = () => { card.classList.toggle("on"); Sound.pop(); };
+    $('[data-a="start"]', el).onclick = () => { pts = 0; $(".pts", el).textContent = 0; on = true; timer.api.reset(); timer.api.start(); show(); Sound.pop(); };
+    $('[data-a="yes"]', el).onclick = () => { if (!on) return; pts++; $(".pts", el).textContent = pts; Sound.success(); show(); };
+    $('[data-a="skip"]', el).onclick = () => { Sound.click(); show(); };
+    timer.addEventListener("timerend", () => { on = false; clap(); toast(`انتهى الوقت! نقاطكِ: ${pts} 🏆`); });
+    show();
+  }
+};
+
+/* الخريطة الذهنية */
+T.mind = {
+  html: s => {
+    const pos = [[17, 18], [50, 10], [83, 18], [17, 80], [50, 88], [83, 80]];
+    return `<div class="mind a"><svg class="lines" viewBox="0 0 100 100" preserveAspectRatio="none">${pos.slice(0, s.branches.length).map(([x, y]) => `<line x1="50" y1="50" x2="${x}" y2="${y}" vector-effect="non-scaling-stroke"/>`).join("")}</svg>
+      <div class="hub">${s.hub}</div>
+      ${s.branches.map((b, i) => `<button class="branch" style="left:${pos[i][0]}%;top:${pos[i][1]}%"><h4>${b.h}</h4><p>${b.p}</p></button>`).join("")}
+    </div><p class="lead a" style="text-align:center;font-size:28px;margin-top:18px">👆 اسألي: «ماذا تذكرين عن…؟» ثم اضغطي لكشف الإجابة</p>`;
+  },
+  init(el) { $$(".branch", el).forEach(b => b.onclick = () => { b.classList.toggle("on"); Sound.pop(); }); }
+};
+
+/* التقييم الفوري: إشارات المرور + المهارات */
+T.exit = {
+  html: s => `<div class="exit">
+      <div class="col grow a" style="gap:14px"><div class="big" style="font-size:36px;color:var(--p)">✅ جدول المهارات — هل أتقنتِ؟</div>
+        <div class="checks skills">${s.skills.map(k => `<button class="check"><span class="box">✓</span>${k}</button>`).join("")}</div></div>
+      <div class="col a" style="width:620px;gap:14px"><div class="big" style="font-size:36px;color:var(--p)">🚦 ارفعي بطاقتك!</div>
+        <div class="lights">${[["🟢", "فهمتُ الدرس تمامًا"], ["🟡", "أحتاج توضيحًا بسيطًا"], ["🔴", "أحتاج مساعدة"]].map(([l, t]) => `
+          <div class="light"><span class="l">${l}</span><span class="t">${t}</span><button class="rbtn" data-d="-1">−</button><span class="c">0</span><button class="rbtn" data-d="1">+</button></div>`).join("")}</div></div></div>`,
+  init(el) {
+    $$(".check", el).forEach(c => c.onclick = () => { c.classList.toggle("on"); Sound.pop(); });
+    $$(".light", el).forEach(l => $$(".rbtn", l).forEach(b => b.onclick = () => {
+      const c = $(".c", l); c.textContent = Math.max(0, +c.textContent + +b.dataset.d); Sound.click();
+    }));
+  }
+};
+
+/* ---------------- 🎬 بناء العرض والتنقل ---------------- */
+const deck = $("#deck"), slides = [];
+let cur = 0;
+CONFIG.slides.forEach((s, i) => {
+  const r = T[s.type]; if (!r) return console.warn("نوع شريحة غير معروف:", s.type);
+  const el = document.createElement("section");
+  el.className = "slide t-" + s.type;
+  el.dataset.trans = s.trans || ["fade", "slide", "zoom"][i % 3];
+  const inner = r.html(s);
+  el.innerHTML = r.noHead ? inner : head(s) + (inner.startsWith('<div class="body') ? inner : `<div class="body">${inner}</div>`);
+  deck.appendChild(el);
+  const api = { enter: [], leave: [] };
+  $$(".timer", el).forEach(t => initTimer(t, api));
+  r.init && r.init(el, s, api);
+  $$(".a", el).forEach((a, k) => a.style.setProperty("--d", k));
+  slides.push({ el, s, api });
+});
+
+function go(n) {
+  if (n < 0 || n >= slides.length || n === cur) return;
+  const old = slides[cur], nw = slides[n];
+  old.api.leave.forEach(f => f());
+  old.el.classList.remove("active"); old.el.classList.add("leaving");
+  setTimeout(() => old.el.classList.remove("leaving"), 450);
+  nw.el.dataset.dir = n > cur ? "f" : "b";
+  nw.el.classList.add("active");
+  nw.api.enter.forEach(f => f());
+  cur = n; updateUI();
+}
+const next = () => go(cur + 1), prev = () => go(cur - 1);
+function updateUI() {
+  $("#counter").textContent = `${cur + 1} / ${slides.length}`;
+  $("#progress").style.width = ((cur + 1) / slides.length * 100) + "%";
+}
+slides[0].el.classList.add("active"); slides[0].el.dataset.dir = "f"; updateUI();
+
+/* ---------------- ⌨️ لوحة المفاتيح ---------------- */
+const typing = e => /^(input|textarea|select)$/i.test(e.target.tagName) || e.target.isContentEditable;
+window.addEventListener("keydown", e => {
+  if (typing(e)) { if (e.key === "Escape") e.target.blur(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.code === "KeyP") {           // تحدي الطباعة
+    const h = slides[cur].api.ctrlP; if (h) { e.preventDefault(); h(); } return;
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  if (k === " " || e.code === "Space" || k === "ArrowRight" || k === "PageDown") { e.preventDefault(); next(); }
+  else if (k === "ArrowLeft" || k === "PageUp") { e.preventDefault(); prev(); }
+  else if (k === "ArrowUp" || k === "ArrowDown") { e.preventDefault(); }
+  else if (k === "Home") { e.preventDefault(); go(0); }
+  else if (k === "End") { e.preventDefault(); go(slides.length - 1); }
+  else if (k === "ت" || e.code === "KeyF") { e.preventDefault(); clap(); }     // ت (نفس زر F)
+  else if (k === "ق" || e.code === "KeyR") { e.preventDefault(); openDraw(); }       // ق (نفس زر R)
+  else if (k === "Escape") { closeModal("board"); closeModal("drawM"); }
+}, true);
+window.addEventListener("keyup", e => { if (!typing(e) && (e.code === "Space" || e.key === " ")) e.preventDefault(); }, true);
+/* إلغاء التركيز بعد الضغط كي لا يُعاد تفعيل الزر بالمسافة */
+document.addEventListener("click", e => { const b = e.target.closest("button"); if (b) b.blur(); ac(); });
+
+/* ---------------- 🎛️ شريط التحكم ---------------- */
+$("#nextBtn").onclick = next;
+$("#prevBtn").onclick = prev;
+$("#clapBtn").onclick = clap;
+$("#fsBtn").onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+  else document.exitFullscreen?.();
+};
+let idleT;
+function wake() { document.body.classList.remove("idle"); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add("idle"), 2800); }
+["mousemove", "mousedown", "touchstart"].forEach(ev => window.addEventListener(ev, wake, { passive: true }));
+wake();
+
+$("#boardBtn").onclick = openBoard;
+$("#drawBtn").onclick = openDraw;
+
+/* ---------------- 📐 ملاءمة الشاشة (16:9 ثابت) ---------------- */
+function fit() {
+  const sc = Math.min(innerWidth / 1920, innerHeight / 1080);
+  $("#stage").style.transform = `translate(-50%,-50%) scale(${sc})`;
+}
+window.addEventListener("resize", fit); fit();
+/* منع أي تمرير داخلي (مثلًا عند التركيز على عنصر) حتى لا تتحرك الشريحة */
+document.addEventListener("scroll", e => {
+  const t = e.target === document ? document.scrollingElement : e.target;
+  if (t && (t.scrollTop || t.scrollLeft)) { t.scrollTop = 0; t.scrollLeft = 0; }
+}, true);
+/* منع التمرير بعجلة الفأرة أو اللمس */
+window.addEventListener("wheel", e => e.preventDefault(), { passive: false });
+window.addEventListener("touchmove", e => { if (!e.target.closest("input")) e.preventDefault(); }, { passive: false });
+</script>
+</body>
+</html>
