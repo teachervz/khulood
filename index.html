@@ -952,6 +952,7 @@ const CONFIG = {
     /* ───────── 27) الختام ───────── */
     { type: "closing", emoji: "🏆", heading: "البيانات تحكي قصة…<br>وأنتِ من ترويها! 📊💜",
       sub: "مبدعات بالأرقام والمخططات… فخورة بكنّ!",
+      reminder: "🔔 تذكير: لا تنسَي حلّ الواجب على منصة مدرستي 💻",
       dua: "سبحانك اللهم وبحمدك، أشهد أن لا إله إلا أنت، أستغفرك وأتوب إليك",
       homework: "📝 <b>مشروع الوحدة:</b> اختاري مع مجموعتك موضوعًا (الأطعمة الصحية وغير الصحية / أنواع التلوث / الأجهزة الرقمية)، واجمعي بياناته في إكسل، ثم مثّليها بأنواع مختلفة من المخططات." }
   ]
@@ -1657,11 +1658,12 @@ T.worksheet = {
 /* الختام */
 T.closing = {
   noHead: true,
-  html: s => `<div class="body center" style="gap:22px">
-      <div class="hero-emoji a float" style="font-size:130px">${s.emoji}</div>
-      <h1 class="a">${s.heading}</h1>
+  html: s => `<div class="body center" style="gap:16px">
+      <div class="hero-emoji a float" style="font-size:96px">${s.emoji}</div>
+      <h1 class="a" style="font-size:86px">${s.heading}</h1>
       <p class="lead a">${s.sub}</p>
       <div class="hw a">${s.homework}</div>
+      ${s.reminder ? `<div class="a" style="background:#FFF6D6;border:4px dashed var(--sun);border-radius:28px;padding:14px 36px;font-size:36px;font-weight:900;color:#7A5200;animation:pulse 1.6s infinite">${s.reminder}</div>` : ""}
       <div class="dua a" style="font-size:36px">🤲 ${s.dua}</div>
       <button class="btn sun a" data-a="clap" style="font-size:38px">👏 صفّقي لنفسكِ!</button></div>`,
   init(el) { $('[data-a="clap"]', el).onclick = () => { clap(); confetti(); }; }
