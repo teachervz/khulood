@@ -438,17 +438,17 @@ table.data tr:nth-child(even) td{background:var(--lav)}
 /* =========================================================
    6) شريط التحكم والتأثيرات
    ========================================================= */
-#bar{position:absolute;bottom:26px;left:50%;transform:translate(-50%,0);display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.92);
-  backdrop-filter:blur(10px);padding:10px 14px;border-radius:999px;box-shadow:0 16px 40px -14px rgba(62,42,122,.45);z-index:60;transition:opacity .4s,transform .4s}
-#bar button{height:66px;min-width:66px;padding:0 24px;border-radius:999px;font-size:26px;font-weight:800;color:var(--p);background:var(--lav);transition:.2s;display:flex;align-items:center;gap:8px}
+#bar{position:absolute;bottom:14px;left:14px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.92);
+  backdrop-filter:blur(10px);padding:5px 7px;border-radius:999px;box-shadow:0 8px 20px -10px rgba(62,42,122,.45);z-index:60;transition:opacity .4s,transform .4s}
+#bar button{height:40px;min-width:40px;padding:0 12px;border-radius:999px;font-size:17px;font-weight:800;color:var(--p);background:var(--lav);transition:.2s;display:flex;align-items:center;gap:8px}
 #bar button:hover{background:var(--lav2);transform:translateY(-2px)}
 #bar button:active{transform:scale(.93)}
-#bar #clapBtn{font-size:36px;background:#FFF1CC}
+#bar #clapBtn{font-size:22px;background:#FFF1CC}
 #bar #nextBtn{background:var(--p);color:#fff}
-#counter{font-size:28px;font-weight:900;color:var(--pd);min-width:120px;text-align:center;direction:ltr}
-#hint{position:absolute;bottom:40px;left:30px;font-size:18px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.8);padding:10px 20px;border-radius:999px;z-index:60;transition:opacity .4s}
+#counter{font-size:17px;font-weight:900;color:var(--pd);min-width:60px;text-align:center;direction:ltr}
+#hint{display:none;position:absolute;bottom:40px;left:30px;font-size:18px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.8);padding:10px 20px;border-radius:999px;z-index:60;transition:opacity .4s}
 #hint b{color:var(--p)}
-body.idle #bar{opacity:0;transform:translate(-50%,30px);pointer-events:none}
+body.idle #bar{opacity:0;transform:translateY(20px);pointer-events:none}
 body.idle #hint{opacity:0}
 body.idle #stage{cursor:none}
 
@@ -807,23 +807,22 @@ const CONFIG = {
 
     { type: "builder", strategy: "✏️ ارسمي بنفسك", title: "ارسمي التمثيل بالأعمدة كما في الرياضيات!", data: "hobbies", ask: true },
 
-    /* ───────── 13) أنواع المخططات (جيجسو) ───────── */
-    { type: "types", strategy: "🧩 التعلم التعاوني (جيجسو)", title: "كل مجموعة تشرح مخططًا!",
+    /* ───────── 13) أنواع المخططات ───────── */
+    { type: "types", title: "أنواع المخططات البيانية",
       items: [
-        { key: "column",   icon: "📊", name: "العمودي", data: "palms", group: 0,
+        { key: "column",   icon: "📊", name: "العمودي", data: "palms",
           def: "تمثيل تخطيطي للبيانات يستخدم أشرطة عمودية لإظهار المقارنات بين الفئات، ويتوافق ارتفاع كل شريط مع قيمة البيانات التي يمثلها.",
           use: "🎯 للمقارنة بين الفئات" },
-        { key: "pie",      icon: "🥧", name: "الدائري", data: "datesShare", group: 1,
+        { key: "pie",      icon: "🥧", name: "الدائري", data: "datesShare",
           def: "مخطط يمثل البيانات كشرائح من دائرة، حيث تتناسب كل شريحة مع الكمية التي تمثلها، ويُستخدم بشكل شائع لإظهار النسب المئوية للفئات المختلفة.",
           use: "🎯 لإظهار النسب المئوية والأجزاء من الكل" },
-        { key: "line",     icon: "📈", name: "الخطي", data: "temps", group: 2,
+        { key: "line",     icon: "📈", name: "الخطي", data: "temps",
           def: "تمثيل تخطيطي للبيانات يعرض المعلومات كسلسلة من نقاط البيانات المتصلة بمقاطع خط مستقيم، ويُستخدم بشكل شائع لإظهار الاتجاهات بمرور الوقت.",
           use: "🎯 لإظهار الاتجاهات والتغيّر بمرور الوقت" },
-        { key: "doughnut", icon: "🍩", name: "الدائري المجوف", data: "trip", group: 3,
+        { key: "doughnut", icon: "🍩", name: "الدائري المجوف", data: "trip",
           def: "مخطط دائري به فجوة في الوسط، ويُستخدم لتمثيل البيانات في شكل نسب مئوية، والحلقة الخارجية مقسّمة إلى شرائح تتوافق مع الفئات المختلفة.",
           use: "🎯 للبيانات المكوّنة من أجزاء متعددة" }
-      ],
-      judge: 4 },
+      ] },
 
     /* ───────── 14) سؤال مقارنة (بعد شرح العمودي) ───────── */
     { type: "chartq", strategy: "⚖️ سؤال مقارنة", ask: true, data: "internet",
@@ -912,14 +911,8 @@ const CONFIG = {
       items: [
         { title: "🥤 مقصف المدرسة", q: "أي عصير نطلب أكثر؟", rows: [["برتقال", 12], ["مانجو", 8], ["تفاح", 5], ["فراولة", 7]],
           icon: "📊", ans: "مخطط عمودي", why: "القرار: زيادة طلب البرتقال 🍊" },
-        { title: "💡 حملة ترشيد الكهرباء", q: "هل نجحت الحملة؟ (الاستهلاك بالكيلوواط)", rows: [["محرم", 900], ["صفر", 820], ["ربيع1", 760], ["ربيع2", 700]],
-          icon: "📈", ans: "مخطط خطي", why: "القرار: نعم نجحت؛ الاستهلاك يتناقص 👏" },
         { title: "🚌 الرحلة المدرسية", q: "أين نوفّر من الميزانية؟", rows: [["النقل", "35%"], ["السكن", "25%"], ["الطعام", "20%"], ["التذاكر", "15%"], ["الهدايا", "5%"]],
-          icon: "🥧", ans: "مخطط دائري", why: "القرار: نبدأ بأكبر بند (النقل)" },
-        { title: "🏫 حضور الطالبات", q: "أي يوم يحتاج تحفيزًا؟", rows: [["الأحد", 29], ["الاثنين", 28], ["الثلاثاء", 27], ["الأربعاء", 26], ["الخميس", 22]],
-          icon: "📊", ans: "مخطط عمودي", why: "القرار: تحفيز خاص ليوم الخميس 🎁" },
-        { title: "🌳 حديقة المدرسة", q: "قارني أنواع الأشجار المزروعة لعامين", rows: [["ليمون", "40% | 35%"], ["زيتون", "30% | 25%"], ["رمان", "30% | 40%"]],
-          icon: "🍩", ans: "دائري مجوف", why: "حلقتان: حلقة لكل عام 💚" }
+          icon: "🥧", ans: "مخطط دائري", why: "القرار: نبدأ بأكبر بند (النقل)" }
       ] },
 
     /* ───────── 23) صح أم خطأ ───────── */
@@ -1640,7 +1633,7 @@ T.hots = {
 /* حل المشكلات – 5 مجموعات */
 T.problems = {
   html: s => `<div class="roles a">${s.roles.map(r => `<span class="chip">${r}</span>`).join("")}</div>
-    <div class="groups" style="margin-top:18px;grid-template-columns:repeat(5,1fr);gap:18px">${s.items.map((p, i) => { const g = CONFIG.groups[i] || {}; return `<div class="flip a"><div class="in">
+    <div class="groups" style="margin-top:18px;grid-template-columns:repeat(${s.items.length},1fr);gap:40px;width:${s.items.length * 460}px;max-width:100%;align-self:center">${s.items.map((p, i) => { const g = CONFIG.groups[i] || {}; return `<div class="flip a"><div class="in">
         <div class="fa" style="justify-content:flex-start;padding:18px;border-top:10px solid ${g.color}"><div style="font-size:26px;font-weight:900;color:${g.color}">${g.emoji} ${g.name}</div>
           <h3 style="font-size:30px;margin-top:6px">${p.title}</h3><div style="font-size:24px;font-weight:800;margin-top:4px">❓ ${p.q}</div>
           <table class="mt">${p.rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table>
@@ -1817,7 +1810,7 @@ T.tps = {
     <div style="display:flex;gap:20px;justify-content:center;margin-top:22px" class="a">
       <button class="btn" data-a="phase">▶ ابدئي مرحلة «فكّري»</button>
       <button class="btn light" data-a="ans">💡 الإجابة النموذجية</button></div>
-    <div class="fb ok tpsans" style="font-size:38px"></div>`,
+    <div class="ansbox tpsans hide" style="position:absolute;left:0;right:0;bottom:120px;margin:auto;width:1400px;text-align:center;font-size:44px;padding:36px 50px;box-shadow:var(--shadow);border:4px solid var(--mint);z-index:5;cursor:pointer">💡 ${s.answer}</div>`,
   init(el, s) {
     let p = -1; const cards = $$(".tps .card", el), names = ["فكّري", "زاوجي", "شاركي"], b = $('[data-a="phase"]', el);
     b.onclick = () => {
@@ -1827,7 +1820,10 @@ T.tps = {
         b.textContent = p < 2 ? `⏭ انتقلي إلى «${names[p + 1]}»` : "✅ إنهاء النقاش"; }
       else { b.classList.add("hide"); clap(); }
     };
-    $('[data-a="ans"]', el).onclick = () => { $(".tpsans", el).innerHTML = s.answer; Sound.success(); };
+    const ans = $(".tpsans", el), ab = $('[data-a="ans"]', el);
+    const toggle = () => { ans.classList.toggle("hide"); const open = !ans.classList.contains("hide");
+      ab.textContent = open ? "✕ إخفاء الإجابة" : "💡 الإجابة النموذجية"; if (open) Sound.success(); };
+    ab.onclick = toggle; ans.onclick = toggle;
   }
 };
 
