@@ -7,7 +7,7 @@
 <!-- الخط العربي (إن لم يتوفر الإنترنت سيُستخدم خط النظام تلقائيًا) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 
 <style>
 /* =========================================================
@@ -600,6 +600,11 @@ body.idle #stage{cursor:none}
 .wsi h4{font-size:34px;font-weight:900;color:var(--pd)}
 .wsi p{font-size:26px;color:var(--muted);font-weight:700;line-height:1.5}
 a.btn{text-decoration:none}
+
+/* النشيد الوطني */
+.ksa{flex:none;height:820px;border-radius:36px;box-shadow:var(--shadow)}
+.anthem{font-family:'Almarai',sans-serif;font-size:47px;line-height:2.1;color:#006C35;font-weight:800;text-align:center;white-space:nowrap;display:grid;grid-template-columns:auto auto;column-gap:60px}
+.anthem div:last-child{grid-column:1 / -1}
 </style>
 </head>
 <body>
@@ -698,6 +703,14 @@ const CONFIG = {
     /* ───────── 3) التحضير ───────── */
     { type: "attend", stage: "التحضير", title: "تحضير الطالبات" },
 
+    /* ───────── النشيد الوطني (يعمل تلقائيًا عند فتح الشريحة) ─────────
+       ملف الصوت «النشيد الوطني.m4a» والصورة «ksa.JPG» يجب أن يبقيا في نفس مجلد هذا الملف */
+    { type: "anthem", audio: "النشيد الوطني.m4a", image: "ksa.JPG", title: "🇸🇦 النشيد الوطني السعودي",
+      lines: ["سارعي للمجد والعلياء", "مجدي لخالق السماء",
+              "وارفعي الخفاق الأخضر", "يحمل النور المسطر",
+              "رددي الله أكبر يا موطني", "موطني عشت فخر المسلمين",
+              "عاش الملك للعلم والوطن"] },
+
     /* ───────── 4) المجموعات بالقرعة ───────── */
     { type: "teams", stage: "التحضير", strategy: "🏆 التعزيز", title: "لوحة نقاط المجموعات" },
 
@@ -748,14 +761,12 @@ const CONFIG = {
     { type: "title", ayah: "﴿ وَأَحْصَىٰ كُلَّ شَيْءٍ عَدَدًا ﴾", ref: "سورة الجن: 28" },
 
     /* ───────── 8) الأهداف ───────── */
-    { type: "goals", strategy: "🎯 أهداف الدرس", title: "في نهاية الدرس ستكونين قادرة على:",
+    { type: "goals", strategy: "🎯 أهداف الدرس", title: "في نهاية الدرس يُتوقّع:",
       goals: [
-        "📖 تعريف المخططات البيانية واستخداماتها.",
-        "🔍 التمييز بين: العمودي، الدائري، الخطي، الدائري المجوف.",
-        "🧭 اختيار المخطط المناسب للبيانات.",
-        "📊 إدراج مخطط عمودي ودائري مجوف وإضافة تسميات البيانات.",
-        "📐 ربط المخططات البيانية بالتمثيل بالأعمدة في الرياضيات.",
-        "🌍 ربط المخططات البيانية بالحياة اليومية."
+        "📋 أن تعدّد الطالبة أنواع المخططات البيانية.",
+        "📖 أن تعرّف الطالبة المخططات البيانية.",
+        "📊 أن تُدرج الطالبة مخططًا عموديًا في برنامج إكسل.",
+        "💚 أن تقدّر الطالبة أهمية المخططات البيانية في عرض البيانات واتخاذ القرار. <span style='font-size:26px;color:var(--mint)'>(هدف وجداني)</span>"
       ] },
 
     /* ───────── 9) فهم قرائي ───────── */
@@ -770,10 +781,7 @@ const CONFIG = {
       questions: [
         { q: "أين عُرضت لوحة المخطط؟",
           options: [{ text: "في الإذاعة المدرسية", correct: true }, { text: "في المقصف" }, { text: "في المكتبة العامة" }, { text: "في الملعب" }] },
-        { q: "ظلّلي في النص الجملة التي تعرّف المخططات البيانية ✍️", answer: "«المخططات البيانية تمثيلات رسومية للبيانات، تساعد على تحليل المعلومات المعقّدة وتسهيل فهمها، وتساعد في اتخاذ القرار»" },
-        { q: "ما نوع المخطط الذي أنشأته ريم؟",
-          options: [{ text: "📈 خطي" }, { text: "📊 عمودي", correct: true }, { text: "🥧 دائري" }, { text: "🍩 مجوف" }] },
-        { q: "استنتجي: ما القرار الذي اتخذته الإدارة بفضل المخطط؟", answer: "عرفت الفصل الأكثر قراءة بنظرة واحدة، فقررت تكريم طالبات الصف السادس 💡" }
+        { q: "ظلّلي في النص الجملة التي تعرّف المخططات البيانية ✍️", answer: "«المخططات البيانية تمثيلات رسومية للبيانات، تساعد على تحليل المعلومات المعقّدة وتسهيل فهمها، وتساعد في اتخاذ القرار»" }
       ] },
 
     /* ───────── 10) التعريف ───────── */
@@ -914,20 +922,8 @@ const CONFIG = {
           icon: "🍩", ans: "دائري مجوف", why: "حلقتان: حلقة لكل عام 💚" }
       ] },
 
-    /* ───────── 22) ورقة العمل ───────── */
-    { type: "worksheet", strategy: "📝 ورقة العمل", title: "ورقة العمل: ارسمي… واتخذي القرار!",
-      file: "3- ورقة العمل.docx", seconds: 480,
-      items: [
-        { e: "🥤", h: "حلّ مشكلة المقصف", p: "ارسمي مخططًا عموديًا واقترحي قرارًا" },
-        { e: "⚽", h: "الرياضة المفضّلة", p: "لوّني المخطط الدائري حسب النسب" },
-        { e: "👟", h: "خطوات ريم", p: "ارسمي مخططًا خطيًا واستنتجي" },
-        { e: "🧭", h: "اختاري المخطط", p: "صِلي كل موقف بالمخطط المناسب" },
-        { e: "📚", h: "اقرئي المخطط", p: "مكتبة المدرسة + ربط بالرياضيات" },
-        { e: "🌟", h: "سؤال إبداعي", p: "نادي البرمجة: كيف تقنعين الإدارة؟" }
-      ] },
-
     /* ───────── 23) صح أم خطأ ───────── */
-    { type: "tf", strategy: "✔️ صح أم خطأ", title: "احكمي على العبارات", ask: true,
+    { type: "tf", stage: "التقويم النهائي", strategy: "✔️ صح أم خطأ", title: "احكمي على العبارات", ask: true,
       items: [
         { s: "المخطط الخطي يُستخدم لإظهار الاتجاهات بمرور الوقت.", a: true },
         { s: "المخطط العمودي يمثّل البيانات كشرائح من دائرة.", a: false, why: "الصحيح: يستخدم أشرطة عمودية." },
@@ -1328,6 +1324,30 @@ T.opening = {
       <div class="card a" style="padding:40px 90px"><div class="ayah">${s.ayah}</div><div class="ref">${s.ref}</div></div>
       <div class="dua a">${s.dua}</div>
       <p class="lead a" style="font-size:32px">🤲 لنردّد معًا قبل أن نبدأ</p></div>`
+};
+
+/* النشيد الوطني: يبدأ تلقائيًا عند فتح الشريحة ويتوقف عند مغادرتها */
+T.anthem = {
+  noHead: true,
+  html: s => `<div class="body" style="flex-direction:row;align-items:center;justify-content:center;gap:50px">
+      <img class="ksa a" src="${s.image}" alt="علم المملكة العربية السعودية">
+      <div class="col" style="gap:30px;align-items:center">
+        <h1 class="a" style="color:#006C35">${s.title}</h1>
+        <div class="card a anthem" style="padding:30px 50px">${s.lines.map(l => `<div>${l}</div>`).join("")}</div>
+        <div class="row a" style="gap:16px;justify-content:center"><button class="btn mint sm" data-a="play">⏸️ إيقاف</button><button class="btn light sm" data-a="restart">🔁 من البداية</button></div>
+      </div>
+      <audio preload="auto" src="${s.audio}"></audio></div>`,
+  init(el, s, api) {
+    const au = $("audio", el), btn = $('[data-a="play"]', el);
+    const sync = () => btn.textContent = au.paused ? "▶️ تشغيل النشيد" : "⏸️ إيقاف";
+    const play = () => au.play().catch(() => {}).finally(sync);
+    au.onplay = au.onpause = au.onended = sync;
+    au.onerror = () => toast("لم يُعثر على ملف «" + s.audio + "» بجانب ملف العرض");
+    btn.onclick = () => au.paused ? play() : au.pause();
+    $('[data-a="restart"]', el).onclick = () => { au.currentTime = 0; play(); };
+    api.enter.push(() => { au.currentTime = 0; play(); });
+    api.leave.push(() => au.pause());
+  }
 };
 
 /* الترحيب */
